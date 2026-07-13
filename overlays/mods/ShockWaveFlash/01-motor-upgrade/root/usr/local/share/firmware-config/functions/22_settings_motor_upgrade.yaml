@@ -1,0 +1,412 @@
+settings:
+  motor_upgrade:
+    label: Motor Upgrade (XY)
+    items:
+      xy_geometry:
+        label: XY Motor Kit
+        description: Stepper geometry for the XY motor/pulley hardware. Only change this AFTER the matching hardware is physically installed.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_geometry.cfg
+            if [ ! -f "$f" ]; then echo stock
+            elif grep -q "^rotation_distance: 39$" "$f"; then echo ldo2504_26t
+            else echo ldo2504_gt2
+            fi
+        options:
+          stock:
+            label: "Stock (1.8\u00b0, GT2 20T)"
+            confirm: "Revert to stock motor geometry (1.8\u00b0 motors, GT2 20T pulleys)? Only do this if the stock hardware is installed. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_geometry.cfg &&
+                echo "Stock XY geometry restored. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_26t:
+            label: "LDO-2504 0.9\u00b0 + 26T 1.5GT"
+            confirm: "Switch to LDO-42STH48-2504MAC(F) 0.9\u00b0 motors with Powge 26T 1.5GT pulleys (rotation_distance 39, full_steps 400)? WARNING: The hardware MUST already be installed \u2014 with stock motors this halves all XY movement. After switching: verify motor direction with STEPPER_BUZZ, re-run StallGuard homing calibration, and re-tune Input Shaper. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/motor-upgrade/geometry-ldo2504-26t.cfg /oem/printer_data/config/extended/klipper/motor_geometry.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_geometry.cfg &&
+                echo "LDO-2504 + 26T 1.5GT geometry active. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_gt2:
+            label: "LDO-2504 0.9\u00b0 + stock GT2 20T"
+            confirm: "Switch to LDO-42STH48-2504MAC(F) 0.9\u00b0 motors keeping the stock GT2 20T pulleys (rotation_distance 40, full_steps 400)? WARNING: The motors MUST already be installed. After switching: verify direction with STEPPER_BUZZ, re-run StallGuard homing calibration, and re-tune Input Shaper. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/motor-upgrade/geometry-ldo2504-gt2.cfg /oem/printer_data/config/extended/klipper/motor_geometry.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_geometry.cfg &&
+                echo "LDO-2504 + stock GT2 geometry active. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: stock
+
+      xy_run_current:
+        label: XY Run Current
+        description: TMC2240 run_current for stepper_x/stepper_y. Stock is 1.2A. Values above 1.2A need additional TMC driver cooling; 1.77A is the LDO-2504 RMS ceiling. Selecting any value here replaces the "TMC Reduced Current" tweak.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_current.cfg
+            if [ ! -f "$f" ]; then echo default; exit 0; fi
+            v=$(grep -m1 '^run_current:' "$f" | awk '{print $2}')
+            case "$v" in
+              1.0) echo c10 ;;
+              1.1) echo c11 ;;
+              1.2) echo c12 ;;
+              1.3) echo c13 ;;
+              1.4) echo c14 ;;
+              1.5) echo c15 ;;
+              1.6) echo c16 ;;
+              *) echo custom ;;
+            esac
+        options:
+          default:
+            label: Stock (1.2A)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_current.cfg &&
+                echo "XY run current back to firmware default (1.2A). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          c10:
+            label: 1.0A
+            confirm: "Set XY run current to 1.0A? Reduced current lowers heat and noise but may skip steps under load. This replaces the TMC Reduced Current tweak if it was enabled. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.0 &&
+                /etc/init.d/S60klipper restart
+          c11:
+            label: 1.1A
+            confirm: "Set XY run current to 1.1A? This replaces the TMC Reduced Current tweak if it was enabled. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.1 &&
+                /etc/init.d/S60klipper restart
+          c12:
+            label: 1.2A (pinned)
+            confirm: "Pin XY run current to 1.2A (same as stock, but explicit)? Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.2 &&
+                /etc/init.d/S60klipper restart
+          c13:
+            label: 1.3A
+            confirm: "Set XY run current to 1.3A? WARNING: Above stock. Requires additional TMC driver cooling. Monitor driver temperatures (temperature_driver sensors) and motor temperatures during first prints. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.3 &&
+                /etc/init.d/S60klipper restart
+          c14:
+            label: 1.4A
+            confirm: "Set XY run current to 1.4A? WARNING: Well above stock. Requires additional TMC driver cooling. Monitor driver and motor temperatures closely. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.4 &&
+                /etc/init.d/S60klipper restart
+          c15:
+            label: 1.5A
+            confirm: "Set XY run current to 1.5A? WARNING: High current. Only with upgraded motors (LDO-2504 or similar) AND additional TMC driver cooling. Monitor temperatures closely. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.5 &&
+                /etc/init.d/S60klipper restart
+          c16:
+            label: 1.6A
+            confirm: "Set XY run current to 1.6A? WARNING: Very high current, near the LDO-2504 RMS ceiling (1.77A). Only with upgraded motors AND effective TMC driver cooling. Expect drivers to run hot; watch temperature_driver readings. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.6 &&
+                /etc/init.d/S60klipper restart
+          custom:
+            label: "Custom\u2026"
+            confirm: "Set a custom XY run current (0.50\u20131.77A RMS)? Values above 1.2A require additional TMC driver cooling. 1.77A is the absolute LDO-2504 RMS limit. Klipper will restart."
+            inputs:
+              - name: MOTOR_CURRENT
+                label: "Run current in A (0.50\u20131.77)"
+                placeholder: "1.25"
+                regex: '^(0\.[5-9][0-9]?|1\.[0-6][0-9]?|1\.7[0-7]?)$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh "${MOTOR_CURRENT}" &&
+                /etc/init.d/S60klipper restart
+        default: default
+
+      xy_autotune:
+        label: TMC AutoTune (Motor DB)
+        description: Runtime driver tuning via the klipper_tmc_autotune plugin with real motor constants from its motor database. Replaces the static "TMC AutoTune" tweak (which is tuned for stock motors).
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_autotune.cfg
+            if [ ! -f "$f" ]; then echo disabled; exit 0; fi
+            g=$(grep -m1 '^tuning_goal:' "$f" | awk '{print $2}')
+            case "$g" in
+              performance) echo ldo2504_perf ;;
+              silent) echo ldo2504_silent ;;
+              autoswitch) echo ldo2504_autoswitch ;;
+              *) echo ldo2504_auto ;;
+            esac
+        options:
+          disabled:
+            label: Disabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                echo "AutoTune (motor DB) disabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_auto:
+            label: LDO-2504 (auto = performance for XY)
+            confirm: "Enable klipper_tmc_autotune for the LDO-42STH48-2504MAC(F) with tuning_goal auto? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Monitor motor temperatures during first use. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/motor-upgrade/autotune-ldo2504.cfg /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                if [ -f /oem/printer_data/config/extended/klipper/tmc_autotune.cfg ]; then
+                  rm -v /oem/printer_data/config/extended/klipper/tmc_autotune.cfg &&
+                  echo "NOTE: static TMC AutoTune tweak removed (superseded by motor-DB autotune)."
+                fi &&
+                echo "AutoTune for LDO-2504 (auto) enabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_perf:
+            label: LDO-2504 (performance)
+            confirm: "Enable klipper_tmc_autotune for the LDO-42STH48-2504MAC(F) with tuning_goal performance (SpreadCycle at all speeds \u2014 more torque, more noise/heat)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                sed 's/^tuning_goal: auto$/tuning_goal: performance/' /usr/local/share/firmware-config/motor-upgrade/autotune-ldo2504.cfg > /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                if [ -f /oem/printer_data/config/extended/klipper/tmc_autotune.cfg ]; then
+                  rm -v /oem/printer_data/config/extended/klipper/tmc_autotune.cfg &&
+                  echo "NOTE: static TMC AutoTune tweak removed (superseded by motor-DB autotune)."
+                fi &&
+                echo "AutoTune for LDO-2504 (performance) enabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_silent:
+            label: LDO-2504 (silent)
+            confirm: "Enable klipper_tmc_autotune with tuning_goal silent (StealthChop at all speeds \u2014 quietest, potentially fewer VFA at low/mid speeds, but reduced torque at high speed; expect skipped steps at stock top speeds, combine with a speed limit)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                sed 's/^tuning_goal: auto$/tuning_goal: silent/' /usr/local/share/firmware-config/motor-upgrade/autotune-ldo2504.cfg > /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                if [ -f /oem/printer_data/config/extended/klipper/tmc_autotune.cfg ]; then
+                  rm -v /oem/printer_data/config/extended/klipper/tmc_autotune.cfg &&
+                  echo "NOTE: static TMC AutoTune tweak removed (superseded by motor-DB autotune)."
+                fi &&
+                echo "AutoTune for LDO-2504 (silent) enabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          ldo2504_autoswitch:
+            label: LDO-2504 (autoswitch, experimental)
+            confirm: "Enable klipper_tmc_autotune with tuning_goal autoswitch (EXPERIMENTAL: StealthChop at low speed, switches to SpreadCycle when needed \u2014 mode transitions can cause artifacts mid-print)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                sed 's/^tuning_goal: auto$/tuning_goal: autoswitch/' /usr/local/share/firmware-config/motor-upgrade/autotune-ldo2504.cfg > /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_autotune.cfg &&
+                if [ -f /oem/printer_data/config/extended/klipper/tmc_autotune.cfg ]; then
+                  rm -v /oem/printer_data/config/extended/klipper/tmc_autotune.cfg &&
+                  echo "NOTE: static TMC AutoTune tweak removed (superseded by motor-DB autotune)."
+                fi &&
+                echo "AutoTune for LDO-2504 (autoswitch) enabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: disabled
+
+      xy_stallguard:
+        label: XY StallGuard Threshold
+        description: Pin the sensorless-homing threshold after calibrating for the new motors. SG4_THRS (0-255, higher = less sensitive) or legacy SGT (-64..63, higher = less sensitive). Leave at Stock until calibrated.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_stallguard.cfg
+            if [ ! -f "$f" ]; then echo default
+            elif grep -q "^driver_SG4_THRS:" "$f"; then echo sg4
+            else echo sgt
+            fi
+        options:
+          default:
+            label: Stock
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_stallguard.cfg &&
+                echo "StallGuard override removed (stock thresholds). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          sg4:
+            label: "SG4_THRS custom\u2026"
+            confirm: "Override driver_SG4_THRS for stepper_x/y? WARNING: A wrong threshold makes homing crash into the frame (too high) or trigger mid-travel (too low). Calibrate empirically first and be ready to power off during the first homing attempt. Klipper will restart."
+            inputs:
+              - name: SG_X
+                label: "SG4_THRS X (0-255)"
+                placeholder: "70"
+                regex: '^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$'
+              - name: SG_Y
+                label: "SG4_THRS Y (0-255)"
+                placeholder: "70"
+                regex: '^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-stallguard.sh sg4 "${SG_X}" "${SG_Y}" &&
+                /etc/init.d/S60klipper restart
+          sgt:
+            label: "SGT custom\u2026"
+            confirm: "Override driver_SGT for stepper_x/y? WARNING: A wrong threshold makes homing crash into the frame or trigger mid-travel. Calibrate empirically first and be ready to power off during the first homing attempt. Klipper will restart."
+            inputs:
+              - name: SG_X
+                label: "SGT X (-64..63)"
+                placeholder: "1"
+                regex: '^(-(6[0-4]|[1-5][0-9]|[1-9])|6[0-3]|[1-5][0-9]|[0-9])$'
+              - name: SG_Y
+                label: "SGT Y (-64..63)"
+                placeholder: "1"
+                regex: '^(-(6[0-4]|[1-5][0-9]|[1-9])|6[0-3]|[1-5][0-9]|[0-9])$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-stallguard.sh sgt "${SG_X}" "${SG_Y}" &&
+                /etc/init.d/S60klipper restart
+        default: default
+
+      xy_speed_limit:
+        label: XY Speed Limit
+        description: Cap max_velocity. First intervention if the 0.9 deg motors skip steps at top speed, before raising current. Stock = no override.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_speed_limit.cfg
+            if [ ! -f "$f" ]; then echo default; exit 0; fi
+            v=$(grep -m1 '^max_velocity:' "$f" | awk '{print $2}')
+            case "$v" in
+              450) echo v450 ;;
+              400) echo v400 ;;
+              350) echo v350 ;;
+              *) echo custom ;;
+            esac
+        options:
+          default:
+            label: Stock
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_speed_limit.cfg &&
+                echo "Speed limit removed (stock max_velocity). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          v450:
+            label: 450 mm/s
+            confirm: "Cap max_velocity at 450mm/s? Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 450 &&
+                /etc/init.d/S60klipper restart
+          v400:
+            label: 400 mm/s
+            confirm: "Cap max_velocity at 400mm/s? Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 400 &&
+                /etc/init.d/S60klipper restart
+          v350:
+            label: 350 mm/s
+            confirm: "Cap max_velocity at 350mm/s? Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 350 &&
+                /etc/init.d/S60klipper restart
+          custom:
+            label: "Custom\u2026"
+            confirm: "Set a custom max_velocity (100-1000 mm/s)? Klipper will restart."
+            inputs:
+              - name: MAX_VEL
+                label: "max_velocity in mm/s (100-1000)"
+                placeholder: "450"
+                regex: '^([1-9][0-9][0-9]|1000)$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh "${MAX_VEL}" &&
+                /etc/init.d/S60klipper restart
+        default: default
+
+      xy_macros:
+        label: Commissioning Macros
+        description: Adds XY_DRIVER_TEMPS (report TMC2240 temps + run current) and XY_STRESS_TEST (motion stress test with temp logging) gcode macros.
+        get_cmd:
+          - bash
+          - -c
+          - test -f /oem/printer_data/config/extended/klipper/motor_macros.cfg && echo "enabled" || echo "disabled"
+        options:
+          enabled:
+            label: Enabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/motor-upgrade/motor-macros.cfg /oem/printer_data/config/extended/klipper/motor_macros.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/motor_macros.cfg &&
+                echo "Commissioning macros installed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          disabled:
+            label: Disabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_macros.cfg &&
+                echo "Commissioning macros removed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: disabled

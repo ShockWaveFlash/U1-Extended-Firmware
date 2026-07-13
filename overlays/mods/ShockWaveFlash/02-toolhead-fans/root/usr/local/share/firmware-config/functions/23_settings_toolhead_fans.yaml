@@ -1,0 +1,73 @@
+settings:
+  toolhead_fans:
+    label: Toolhead Fans
+    items:
+      nozzle_fan_speed:
+        label: Nozzle Fan Speed (T0-T3)
+        description: Speed of the temperature-triggered nozzle/heatbreak fans per toolhead. Stock is 1.0. Lower is quieter, but values below ~0.6 increase heat-creep and clog risk. This is NOT the part cooling fan.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/nozzle_fans.cfg
+            if [ ! -f "$f" ]; then echo default; exit 0; fi
+            vals=$(grep '^fan_speed:' "$f" | awk '{print $2}' | tr '\n' ' ')
+            if [ "$vals" = "0.6 0.6 0.6 0.6 " ]; then echo quiet
+            elif [ "$vals" = "0.8 0.8 0.8 0.8 " ]; then echo reduced
+            else echo custom
+            fi
+        options:
+          default:
+            label: Stock (1.0)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/nozzle_fans.cfg &&
+                echo "Nozzle fan speeds back to stock (1.0). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          reduced:
+            label: Reduced (0.8, all)
+            confirm: "Set all four nozzle fans to 0.8? Quieter with a modest cooling reduction. Watch for heat creep (soft clicks, clogs) on long high-temp prints. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/toolhead-fans/set-nozzle-fans.sh 0.8 0.8 0.8 0.8 &&
+                /etc/init.d/S60klipper restart
+          quiet:
+            label: Quiet (0.6, all)
+            confirm: "Set all four nozzle fans to 0.6 (community-proven quiet value)? WARNING: Noticeably less heatbreak cooling. Monitor for heat creep, especially with PLA at long prints or high chamber temperatures. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/toolhead-fans/set-nozzle-fans.sh 0.6 0.6 0.6 0.6 &&
+                /etc/init.d/S60klipper restart
+          custom:
+            label: "Custom per tool\u2026"
+            confirm: "Set individual nozzle fan speeds per toolhead (0.30-1.0)? WARNING: Values below 0.6 significantly increase heat-creep and clog risk \u2014 only go lower for tools you rarely use or after verifying temperatures. Klipper will restart."
+            inputs:
+              - name: FAN_T0
+                label: "T0 fan_speed (0.30-1.0)"
+                placeholder: "0.6"
+                regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
+              - name: FAN_T1
+                label: "T1 fan_speed (0.30-1.0)"
+                placeholder: "0.6"
+                regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
+              - name: FAN_T2
+                label: "T2 fan_speed (0.30-1.0)"
+                placeholder: "0.6"
+                regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
+              - name: FAN_T3
+                label: "T3 fan_speed (0.30-1.0)"
+                placeholder: "0.6"
+                regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/toolhead-fans/set-nozzle-fans.sh "${FAN_T0}" "${FAN_T1}" "${FAN_T2}" "${FAN_T3}" &&
+                /etc/init.d/S60klipper restart
+        default: default
