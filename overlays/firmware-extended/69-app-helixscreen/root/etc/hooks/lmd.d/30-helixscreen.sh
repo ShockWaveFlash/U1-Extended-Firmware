@@ -30,6 +30,7 @@
 if [ "$1" = start ]; then
 	HELIX_ROOT=/oem/apps/helixscreen/latest
 	HELIX_CFG=/oem/printer_data/config/extended/extended2.cfg
+	HELIX_CFG_DIR=/oem/printer_data/config/extended/helixscreen
 	HELIX_GUI=/usr/bin/gui
 	HELIX_WPA=/oem/printer_data/gui/wpa_supplicant.conf
 	HELIX_WPA_ETC=/etc/wpa_supplicant.conf
@@ -47,6 +48,16 @@ if [ "$1" = start ]; then
 		# Skip connector auto-detection, which can race the DRM device at boot.
 		export HELIX_DRM_DEVICE=/dev/dri/card0
 		export HELIX_CACHE_DIR=/userdata/helixscreen/cache
+		# Settings, themes and spool assignments otherwise resolve to `config`
+		# relative to the install root, which is `$HELIX_ROOT` — the versioned
+		# directory an upgrade deletes. Keep them in the extended config dir,
+		# which persists across firmware upgrades and is already backed up and
+		# reset by the recovery flags.
+		export HELIX_CONFIG_DIR="$HELIX_CFG_DIR"
+		if [ ! -d "$HELIX_CFG_DIR" ]; then
+			mkdir -p "$HELIX_CFG_DIR"
+			chown lava:lava "$HELIX_CFG_DIR"
+		fi
 
 		# `S99fb-http` snapshots `/dev/fb0` for the remote screen, but
 		# HelixScreen renders into its own DRM buffer and never writes the
@@ -99,5 +110,5 @@ if [ "$1" = start ]; then
 		logger -p user.info -t "lmd[$$]" -- "Restored stock $HELIX_GUI"
 	fi
 
-	unset HELIX_ROOT HELIX_CFG HELIX_GUI HELIX_WPA HELIX_WPA_ETC HELIX_SELECTED HELIX_BOUND
+	unset HELIX_ROOT HELIX_CFG HELIX_CFG_DIR HELIX_GUI HELIX_WPA HELIX_WPA_ETC HELIX_SELECTED HELIX_BOUND
 fi

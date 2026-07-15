@@ -81,6 +81,17 @@ stock UI keeps its copy in, so they survive a reboot and both interfaces see the
 same network. A network already configured on the stock screen is picked up
 automatically.
 
+## Settings
+
+HelixScreen writes its settings, themes and spool assignments to
+`printer_data/config/extended/helixscreen/`, so they survive both a reboot and a
+firmware upgrade. By default it would keep them inside its own install
+directory, which is replaced whenever a new version is downloaded.
+
+The directory is moved aside by `extended-recover`, and removed by
+`full-recover`, along with the rest of the extended configuration — see
+[Data Persistence](data_persistence.md).
+
 ## Known limitations
 
 - **The camera must not be set to Disabled.** `lmd` is not started at all in that
