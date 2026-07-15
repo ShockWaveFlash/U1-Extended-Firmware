@@ -25,9 +25,11 @@ Klipper touchscreen UI.
 
 Navigate to the [firmware-config](firmware_config.md) web interface, go to the
 Snapmaker Components section, and select HelixScreen under Touchscreen GUI. This
-downloads and installs HelixScreen (~46 MB into `/oem/apps/helixscreen`).
+downloads and installs HelixScreen (~46 MB into `/oem/apps/helixscreen`), then
+reboots the printer to apply — the GUI is only swapped while `lmd` starts.
 
-**Reboot the printer to apply.** The GUI is only swapped while `lmd` starts.
+Selecting Snapmaker again removes `/oem/apps/helixscreen` and reboots, so
+switching back to HelixScreen downloads it again.
 
 ## Manual Setup (advanced)
 
