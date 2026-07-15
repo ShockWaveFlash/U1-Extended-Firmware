@@ -27,13 +27,15 @@
 # Both directions are applied here rather than at selection time: `lmd` has not
 # forked the GUI yet, so the mount is never busy, and every start re-reads the
 # config and converges on it.
+#
+# WiFi needs nothing from this hook: `14-patch-wifi-persist` points
+# `wpa_supplicant` at a persistent config for both UIs, so a network joined in
+# HelixScreen survives a reboot on its own.
 if [ "$1" = start ]; then
 	HELIX_ROOT=/oem/apps/helixscreen/latest
 	HELIX_CFG=/oem/printer_data/config/extended/extended2.cfg
 	HELIX_CFG_DIR=/oem/printer_data/config/extended/helixscreen
 	HELIX_GUI=/usr/bin/gui
-	HELIX_WPA=/oem/printer_data/gui/wpa_supplicant.conf
-	HELIX_WPA_ETC=/etc/wpa_supplicant.conf
 
 	HELIX_SELECTED=$(/usr/local/bin/extended-config.py get "$HELIX_CFG" components gui snapmaker 2>/dev/null)
 	grep -q " $HELIX_GUI " /proc/mounts && HELIX_BOUND=yes || HELIX_BOUND=
@@ -72,30 +74,6 @@ if [ "$1" = start ]; then
 		# that silently does nothing.
 		export HELIX_REMOTE_SCREEN_FB0=/dev/fb0
 
-		# HelixScreen saves a joined network with wpa_supplicant's SAVE_CONFIG,
-		# which writes the `-c` file — `wpa-conf.sh` points that at
-		# `/etc/wpa_supplicant.conf` whenever it is writable, and it is, but it
-		# sits on the overlay `S01aoverlayfs` wipes on every boot. The stock UI
-		# kept its own copy under `printer_data` and reloaded it; bind-mount
-		# that copy over the volatile path so wpa_supplicant reads and writes
-		# `/oem` directly and the network survives a reboot.
-		if ! grep -q " $HELIX_WPA_ETC " /proc/mounts; then
-			if [ ! -f "$HELIX_WPA" ]; then
-				mkdir -p "${HELIX_WPA%/*}"
-				# Seed from the stock file to keep `ctrl_interface=` and
-				# `update_config=1`, without which SAVE_CONFIG is refused.
-				cp "$HELIX_WPA_ETC" "$HELIX_WPA"
-				chown lava:lava "$HELIX_WPA"
-			fi
-			if mount --bind "$HELIX_WPA" "$HELIX_WPA_ETC"; then
-				# wpa_supplicant read the pristine copy back at `S40network`;
-				# point it at the persisted one. This is the same stage the
-				# stock UI restored WiFi at, so association is no later.
-				wpa_cli reconfigure >/dev/null 2>&1 || true
-				logger -p user.info -t "lmd[$$]" -- "WiFi config bound to $HELIX_WPA"
-			fi
-		fi
-
 		if [ -z "$HELIX_BOUND" ]; then
 			if mount -o ro --bind "$HELIX_ROOT/bin/helix-screen" "$HELIX_GUI"; then
 				logger -p user.info -t "lmd[$$]" -- "HelixScreen bound over $HELIX_GUI"
@@ -103,12 +81,10 @@ if [ "$1" = start ]; then
 		fi
 	elif [ -n "$HELIX_BOUND" ]; then
 		# Stock UI selected again, or HelixScreen removed while still selected —
-		# drop the binds so `lmd` forks the real Snapmaker binary and it manages
-		# `/etc/wpa_supplicant.conf` itself again.
+		# drop the bind so `lmd` forks the real Snapmaker binary.
 		umount "$HELIX_GUI" || umount -l "$HELIX_GUI"
-		grep -q " $HELIX_WPA_ETC " /proc/mounts && { umount "$HELIX_WPA_ETC" || umount -l "$HELIX_WPA_ETC"; }
 		logger -p user.info -t "lmd[$$]" -- "Restored stock $HELIX_GUI"
 	fi
 
-	unset HELIX_ROOT HELIX_CFG HELIX_CFG_DIR HELIX_GUI HELIX_WPA HELIX_WPA_ETC HELIX_SELECTED HELIX_BOUND
+	unset HELIX_ROOT HELIX_CFG HELIX_CFG_DIR HELIX_GUI HELIX_SELECTED HELIX_BOUND
 fi

@@ -67,9 +67,6 @@ with nothing to undo on disk.
 and never writes the framebuffer that `fb-http` snapshots, so it is asked to
 mirror each rendered frame into `/dev/fb0`.
 
-The same bind-mount applies to `wpa_supplicant.conf`, whose usual location is
-wiped on every boot — see [WiFi](#wifi).
-
 ## WiFi
 
 HelixScreen manages WiFi itself, over the same `wpa_supplicant` control socket
