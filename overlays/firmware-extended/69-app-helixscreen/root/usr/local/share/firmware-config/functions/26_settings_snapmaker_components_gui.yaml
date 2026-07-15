@@ -15,17 +15,19 @@ settings:
         options:
           snapmaker:
             label: Snapmaker
-            confirm: "Switch back to the stock Snapmaker touchscreen UI?\n\nThe printer must be rebooted for the change to take effect. The downloaded HelixScreen files are kept, so switching back to HelixScreen later does not re-download them."
+            confirm: "Switch back to the stock Snapmaker touchscreen UI?\n\nThe downloaded HelixScreen files are removed, so switching back to HelixScreen later downloads them again.\n\nThe printer reboots to apply the change."
             cmd:
               - bash
               - -xec
               - |
                 /usr/local/bin/extended-config.py add /oem/printer_data/config/extended/extended2.cfg components gui snapmaker
+                /usr/local/bin/helixscreen-pkg clean
                 echo ""
-                echo ">> Stock Snapmaker UI selected. Reboot the printer to apply."
+                echo ">> Stock Snapmaker UI selected. Rebooting..."
+                (sleep 3; /sbin/reboot) >/dev/null 2>&1 &
           helixscreen:
             label: HelixScreen
-            confirm: "Replace the stock Snapmaker touchscreen UI with HelixScreen?\n\nHelixScreen is a third-party Klipper touchscreen interface and is downloaded on demand (~46 MB). It takes over WiFi setup from the stock UI, so a saved network is reconnected by HelixScreen itself.\n\nThe printer must be rebooted for the change to take effect."
+            confirm: "Replace the stock Snapmaker touchscreen UI with HelixScreen?\n\nHelixScreen is a third-party Klipper touchscreen interface and is downloaded on demand (~46 MB). It takes over WiFi setup from the stock UI, so a saved network is reconnected by HelixScreen itself.\n\nThe printer reboots to apply the change."
             cmd:
               - bash
               - -xec
@@ -33,5 +35,6 @@ settings:
                 /usr/local/bin/helixscreen-pkg download
                 /usr/local/bin/extended-config.py add /oem/printer_data/config/extended/extended2.cfg components gui helixscreen
                 echo ""
-                echo ">> HelixScreen selected. Reboot the printer to apply."
+                echo ">> HelixScreen selected. Rebooting..."
+                (sleep 3; /sbin/reboot) >/dev/null 2>&1 &
         default: snapmaker
