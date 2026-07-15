@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+VERSION=0.99.92
+URL="https://github.com/prestonbrown/helixscreen/releases/download/v${VERSION}/helixscreen-snapmaker-u1-v${VERSION}.tar.gz"
+SHA256=687f149085b53a24ab63f13e223b9c2956ab170aab0b4e339189b19b994b04ad
+
+APP_DIR="/oem/apps/helixscreen"
+
+# Follow the `latest` symlink to the installed version, so an older build keeps
+# working until an upgrade replaces it with the pinned version.
+HELIX_DIR="$APP_DIR/latest"
+
+check() {
+    if [[ -x "$HELIX_DIR/bin/helix-screen" ]]; then
+        echo "HelixScreen is installed."
+        return 0
+    else
+        echo "HelixScreen is not installed."
+        return 1
+    fi
+}
+
+needs_upgrade() {
+    if [[ -L "$APP_DIR/latest" && -e "$APP_DIR/latest" ]]; then
+        [[ "$(readlink "$APP_DIR/latest")" != "helixscreen-${VERSION}" ]]
+    else
+        return 1
+    fi
+}
+
+upgrade() {
+    download
+}
+
+clean() {
+    echo "Removing HelixScreen installation..."
+    rm -rf "$APP_DIR"
+    echo "Removed."
+}
+
+download() {
+    rm -rf "$APP_DIR/tmp"
+    mkdir -p "$APP_DIR/tmp/helixscreen-${VERSION}"
+
+    echo "Downloading HelixScreen $VERSION..."
+    if ! /usr/local/bin/curl -fSL -o "$APP_DIR/tmp/helixscreen-${VERSION}.tar.gz" "$URL"; then
+        echo "Download failed"
+        return 1
+    fi
+
+    echo "Verifying checksum..."
+    if ! echo "$SHA256  $APP_DIR/tmp/helixscreen-${VERSION}.tar.gz" | sha256sum -c; then
+        echo "Checksum verification failed"
+        return 1
+    fi
+
+    echo "Installing..."
+    if ! tar --strip-components=1 -xzf "$APP_DIR/tmp/helixscreen-${VERSION}.tar.gz" \
+            -C "$APP_DIR/tmp/helixscreen-${VERSION}"; then
+        echo "Extraction failed"
+        return 1
+    fi
+
+    if [[ ! -x "$APP_DIR/tmp/helixscreen-${VERSION}/bin/helix-screen" ]]; then
+        echo "Installation failed: binaries not found"
+        return 1
+    fi
+
+    rm -f "$APP_DIR/tmp/helixscreen-${VERSION}.tar.gz"
+    rm -rf "$APP_DIR/helixscreen-"*
+    mv "$APP_DIR/tmp/helixscreen-${VERSION}" "$APP_DIR/"
+    ln -sfn "helixscreen-${VERSION}" "$APP_DIR/latest"
+    echo "HelixScreen $VERSION installed to $APP_DIR"
+}
+
+case "$1" in
+    check)
+        check
+        ;;
+    needs_upgrade)
+        needs_upgrade
+        ;;
+    upgrade)
+        if ! upgrade; then
+            rm -rf "$APP_DIR/tmp"
+            exit 1
+        fi
+        ;;
+    download)
+        if check; then
+            echo "HelixScreen is already installed."
+            exit 0
+        fi
+        if ! clean; then
+            echo "Failed to clean old installation"
+            exit 1
+        fi
+        if ! download; then
+            rm -rf "$APP_DIR"
+            exit 1
+        fi
+        ;;
+    clean)
+        clean
+        ;;
+    *)
+        echo "Usage: $0 check|needs_upgrade|download|upgrade|clean"
+        exit 1
+        ;;
+esac
