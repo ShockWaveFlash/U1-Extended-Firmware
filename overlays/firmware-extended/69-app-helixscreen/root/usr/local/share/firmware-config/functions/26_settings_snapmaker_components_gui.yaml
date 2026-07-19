@@ -27,7 +27,7 @@ settings:
                 (sleep 3; /sbin/reboot) >/dev/null 2>&1 &
           helixscreen:
             label: HelixScreen
-            confirm: "Replace the stock Snapmaker touchscreen UI with HelixScreen?\n\nHelixScreen is a third-party Klipper touchscreen interface and is downloaded on demand (~46 MB). It takes over WiFi setup from the stock UI, so a saved network is reconnected by HelixScreen itself.\n\nThe printer reboots to apply the change."
+            confirm: "Replace the stock Snapmaker touchscreen UI with HelixScreen?\n\nHelixScreen is a third-party Klipper touchscreen interface and is downloaded on demand (~46 MB). It manages WiFi itself, but reads and writes the same saved-network file as the stock UI, so an already-configured network carries over automatically.\n\nThe printer reboots to apply the change."
             cmd:
               - bash
               - -xec
