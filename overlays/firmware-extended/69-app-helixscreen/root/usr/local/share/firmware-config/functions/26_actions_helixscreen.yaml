@@ -4,13 +4,13 @@ quick_actions:
       helixscreen-upgrade:
         label: Upgrade HelixScreen
         description: Download and install the latest pinned HelixScreen version.
-        if_cmd: /usr/local/bin/helixscreen-pkg needs_upgrade
+        if_cmd: /usr/local/bin/extended-pkg helixscreen needs_upgrade
         confirm: "Upgrade HelixScreen? The printer reboots afterwards to run the new version."
         cmd:
           - bash
           - -ec
           - |
-            /usr/local/bin/helixscreen-pkg upgrade
+            /usr/local/bin/extended-pkg helixscreen upgrade
             echo ""
             echo ">> HelixScreen upgraded. Rebooting..."
             (sleep 3; /sbin/reboot) >/dev/null 2>&1 &
