@@ -39,7 +39,7 @@ Requires [SSH access](ssh_access.md) to the printer.
 
 ```bash
 ssh root@<printer-ip>
-helixscreen-pkg download
+extended-pkg helixscreen download
 ```
 
 **Step 2:** Edit `extended/extended2.cfg`, set the `gui`:

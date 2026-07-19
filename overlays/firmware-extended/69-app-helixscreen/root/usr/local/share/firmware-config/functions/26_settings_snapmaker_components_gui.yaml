@@ -21,7 +21,7 @@ settings:
               - -xec
               - |
                 /usr/local/bin/extended-config.py add /oem/printer_data/config/extended/extended2.cfg components gui snapmaker
-                /usr/local/bin/helixscreen-pkg clean
+                /usr/local/bin/extended-pkg helixscreen clean
                 echo ""
                 echo ">> Stock Snapmaker UI selected. Rebooting..."
                 (sleep 3; /sbin/reboot) >/dev/null 2>&1 &
@@ -32,7 +32,7 @@ settings:
               - bash
               - -xec
               - |
-                /usr/local/bin/helixscreen-pkg download
+                /usr/local/bin/extended-pkg helixscreen download
                 /usr/local/bin/extended-config.py add /oem/printer_data/config/extended/extended2.cfg components gui helixscreen
                 echo ""
                 echo ">> HelixScreen selected. Rebooting..."
