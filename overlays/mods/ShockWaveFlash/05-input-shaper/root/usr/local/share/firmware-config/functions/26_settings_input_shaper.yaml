@@ -1,0 +1,78 @@
+settings:
+  input_shaper:
+    label: Input Shaper
+    items:
+      is_values:
+        label: Input Shaper (X/Y)
+        description: Persists an [input_shaper] override (type + frequency per axis) from a resonance measurement. Survives firmware updates (last-wins in extended/klipper). Re-run a measurement after the XY motor upgrade - the resonance frequencies shift with the changed motors/mass.
+        get_cmd:
+          - bash
+          - -c
+          - test -f /oem/printer_data/config/extended/klipper/input_shaper.cfg && echo "custom" || echo "default"
+        options:
+          default:
+            label: Stock (off)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/input_shaper.cfg &&
+                echo "Input shaper override removed (back to stock). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          custom:
+            label: "Custom…"
+            confirm: "Apply these input shaper values? Enter the type and frequency your resonance measurement recommended for each axis. Klipper will restart."
+            inputs:
+              - name: SHAPER_X
+                label: "Shaper type X (zv/mzv/ei/2hump_ei/3hump_ei)"
+                placeholder: "mzv"
+                regex: '^(zv|mzv|ei|2hump_ei|3hump_ei)$'
+              - name: FREQ_X
+                label: "shaper_freq_x in Hz (20-150)"
+                placeholder: "52.4"
+                regex: '^(2[0-9]|[3-9][0-9]|1[0-4][0-9]|150)(\.[0-9])?$'
+              - name: SHAPER_Y
+                label: "Shaper type Y (zv/mzv/ei/2hump_ei/3hump_ei)"
+                placeholder: "mzv"
+                regex: '^(zv|mzv|ei|2hump_ei|3hump_ei)$'
+              - name: FREQ_Y
+                label: "shaper_freq_y in Hz (20-150)"
+                placeholder: "41.8"
+                regex: '^(2[0-9]|[3-9][0-9]|1[0-4][0-9]|150)(\.[0-9])?$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/input-shaper/set-input-shaper.sh "${SHAPER_X}" "${FREQ_X}" "${SHAPER_Y}" "${FREQ_Y}" &&
+                /etc/init.d/S60klipper restart
+        default: default
+
+      is_calibrate:
+        label: Calibration Macro
+        description: Adds CALIBRATE_INPUT_SHAPER - runs Klipper's resonance measurement (SHAPER_CALIBRATE) for X and Y using the onboard accelerometer and prints the recommended shaper type + frequency to enter above. Requires a working [resonance_tester]/accelerometer on this machine.
+        get_cmd:
+          - bash
+          - -c
+          - test -f /oem/printer_data/config/extended/klipper/input_shaper_calibrate.cfg && echo "enabled" || echo "disabled"
+        options:
+          enabled:
+            label: Enabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/input-shaper/input-shaper-calibrate.cfg /oem/printer_data/config/extended/klipper/input_shaper_calibrate.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/input_shaper_calibrate.cfg &&
+                echo "CALIBRATE_INPUT_SHAPER macro installed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          disabled:
+            label: Disabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/input_shaper_calibrate.cfg &&
+                echo "CALIBRATE_INPUT_SHAPER macro removed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: disabled

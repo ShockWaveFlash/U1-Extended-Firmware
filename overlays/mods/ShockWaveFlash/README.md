@@ -46,7 +46,29 @@ pre-heating):
   timeout — pick a target the bed can realistically drive the enclosure to, and
   abort with `CANCEL_PRINT` / `M112` if it stalls.
 
-All four write separate `.cfg` fragments into `extended/klipper/` (included at
+A fifth overlay (`05-input-shaper/`) adds an **Input Shaper** group:
+
+| Setting | Options | Effect |
+|---|---|---|
+| Input Shaper (X/Y) | Stock (off) / Custom (type + freq per axis) | `[input_shaper]` override (`shaper_type_x/y`, `shaper_freq_x/y`). Type one of `zv/mzv/ei/2hump_ei/3hump_ei`, freq 20-150 Hz. |
+| Calibration Macro | Enabled / Disabled | Ships `CALIBRATE_INPUT_SHAPER` — runs `SHAPER_CALIBRATE` for X/Y and prints the recommended shaper to enter above. |
+
+Workflow: after the XY motor upgrade the resonance frequencies shift, so
+re-measure. Enable the calibration macro, run `CALIBRATE_INPUT_SHAPER` (optional
+`AXIS=X`/`AXIS=Y`), read the *Recommended shaper* line, then enter type + freq
+per axis under **Input Shaper (X/Y) > Custom**. Values are persisted in
+`extended/klipper` and are **not** auto-`SAVE_CONFIG`'d (this firmware manages
+`printer.cfg`), so they survive firmware updates.
+
+> **On-device caveat (untested):** `CALIBRATE_INPUT_SHAPER` assumes a working
+> stock `[resonance_tester]` + accelerometer. On this 4-toolhead machine the
+> accelerometer wiring/`accel_chip` and probe point still need verification —
+> run `MEASURE_AXES_NOISE` once to confirm the sensor responds before trusting a
+> `SHAPER_CALIBRATE` run. The manual **Input Shaper (X/Y)** values path works
+> regardless of how the frequencies were obtained (accelerometer or ringing
+> tower).
+
+All five write separate `.cfg` fragments into `extended/klipper/` (included at
 the end of `printer.cfg`, so they override stock values last-wins) and restart
 Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
 
@@ -66,6 +88,8 @@ Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
   `/usr/local/share/firmware-config/motor-upgrade/`.
 - `set-bed-maxtemp.sh` + `heat-soak.cfg` under
   `/usr/local/share/firmware-config/bed-chamber/`.
+- `set-input-shaper.sh` + `input-shaper-calibrate.cfg` under
+  `/usr/local/share/firmware-config/input-shaper/`.
 
 ## After switching the motor kit
 
@@ -87,8 +111,8 @@ Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
 ## Status
 
 - [x] YAML validated against firmware-config `deep_merge`/`handle_get_settings`
-- [x] `bash -n` on all embedded commands, `sh -n` + round-trip test on `set-current.sh` and `set-bed-maxtemp.sh`
+- [x] `bash -n` on all embedded commands, `sh -n` + round-trip on `set-current.sh`, `set-bed-maxtemp.sh`, `set-input-shaper.sh`
 - [x] `py_compile` on bundled plugin files
-- [x] Jinja2 parse of the `HEAT_SOAK` gcode template
+- [x] Jinja2 parse of the `HEAT_SOAK` and `CALIBRATE_INPUT_SHAPER` gcode templates
 - [ ] Full firmware build
-- [ ] On-device validation (get_cmd state detection, Klipper restart, autotune plugin load on Snapmaker's Klipper fork, `[heater_bed] max_temp` last-wins override, `HEAT_SOAK` chamber/timer modes against the real cavity sensor)
+- [ ] On-device validation (get_cmd state detection, Klipper restart, autotune plugin load on Snapmaker's Klipper fork, `[heater_bed] max_temp` last-wins override, `HEAT_SOAK` chamber/timer modes against the real cavity sensor, `[input_shaper]` last-wins override, `CALIBRATE_INPUT_SHAPER` against the real accelerometer/`resonance_tester`)
