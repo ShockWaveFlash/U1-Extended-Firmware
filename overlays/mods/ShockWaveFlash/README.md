@@ -28,7 +28,25 @@ A third overlay (`03-z-axis/`) adds a **Z Axis** group (against Z bumps/noise):
 | Z StealthChop | Stock (SpreadCycle) / StealthChop | `stealthchop_threshold: 999999` on `[tmc2209 stepper_z]` (Z uses a TMC2209, not 2240; homes sensorless - re-verify G28 Z) |
 | Z Run Current | Stock 0.85A / 0.7A / Custom (0.50-0.90) | `run_current` on `[tmc2209 stepper_z]`; Z lifts the full bed, low current risks lost steps |
 
-All three write separate `.cfg` fragments into `extended/klipper/` (included at
+A fourth overlay (`04-bed-chamber/`) adds a **Bed & Chamber** group:
+
+| Setting | Options | Effect |
+|---|---|---|
+| Bed Max Temp | Stock 110C / 115C / 120C / Custom (111-120) | `[heater_bed] max_temp` override. Only lifts the ceiling for high-temp materials — heats nothing by itself. Confirm bed surface / adhesive / wiring ratings above 110C. |
+| HEAT_SOAK Macro | Enabled / Disabled | Ships the `HEAT_SOAK` gcode macro (drop-in `heat_soak.cfg`). |
+
+The `HEAT_SOAK` macro heats the bed and then soaks, in one of two mutually
+exclusive modes (it is **blocking** — for slicer start gcode or manual
+pre-heating):
+
+- `HEAT_SOAK BED=100 MINUTES=15` — fixed timed soak (1–120 min).
+- `HEAT_SOAK BED=100 CHAMBER=45` — waits until the stock `[temperature_sensor
+  cavity]` (gcode_id C) reaches the target. Capped at **55C** (the cavity is
+  only passively heated by the bed; sensor `max_temp` is 70C). This wait has no
+  timeout — pick a target the bed can realistically drive the enclosure to, and
+  abort with `CANCEL_PRINT` / `M112` if it stalls.
+
+All four write separate `.cfg` fragments into `extended/klipper/` (included at
 the end of `printer.cfg`, so they override stock values last-wins) and restart
 Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
 
@@ -46,6 +64,8 @@ Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
   same drop-in mechanism the AFC overlay uses).
 - Config templates + `set-current.sh` under
   `/usr/local/share/firmware-config/motor-upgrade/`.
+- `set-bed-maxtemp.sh` + `heat-soak.cfg` under
+  `/usr/local/share/firmware-config/bed-chamber/`.
 
 ## After switching the motor kit
 
@@ -67,7 +87,8 @@ Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
 ## Status
 
 - [x] YAML validated against firmware-config `deep_merge`/`handle_get_settings`
-- [x] `bash -n` on all embedded commands, `sh -n` + round-trip test on `set-current.sh`
+- [x] `bash -n` on all embedded commands, `sh -n` + round-trip test on `set-current.sh` and `set-bed-maxtemp.sh`
 - [x] `py_compile` on bundled plugin files
+- [x] Jinja2 parse of the `HEAT_SOAK` gcode template
 - [ ] Full firmware build
-- [ ] On-device validation (get_cmd state detection, Klipper restart, autotune plugin load on Snapmaker's Klipper fork)
+- [ ] On-device validation (get_cmd state detection, Klipper restart, autotune plugin load on Snapmaker's Klipper fork, `[heater_bed] max_temp` last-wins override, `HEAT_SOAK` chamber/timer modes against the real cavity sensor)
