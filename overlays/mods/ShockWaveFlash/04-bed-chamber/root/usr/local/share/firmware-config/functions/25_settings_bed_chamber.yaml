@@ -1,0 +1,92 @@
+settings:
+  bed_chamber:
+    label: Bed & Chamber
+    items:
+      bed_maxtemp:
+        label: Bed Max Temp
+        description: Raises the heater_bed max_temp limit (stock 110C). Only enables higher setpoints in the slicer/UI - it does not heat anything by itself. Use for high-temp materials (ABS/ASA/PC) that benefit from a hotter bed. Watch adhesive/PEI limits and cable/insulation ratings above 110C.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/bed_maxtemp.cfg
+            if [ ! -f "$f" ]; then echo default; exit 0; fi
+            v=$(grep -m1 '^max_temp:' "$f" | awk '{print $2}')
+            case "$v" in
+              115) echo p115 ;;
+              120) echo p120 ;;
+              *) echo custom ;;
+            esac
+        options:
+          default:
+            label: Stock (110C)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/bed_maxtemp.cfg &&
+                echo "Bed max_temp back to stock (110C). Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          p115:
+            label: 115C
+            confirm: "Raise heater_bed max_temp to 115C? Only lift this if your bed surface (PEI/adhesive) and wiring are rated for it. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/bed-chamber/set-bed-maxtemp.sh 115 &&
+                /etc/init.d/S60klipper restart
+          p120:
+            label: 120C
+            confirm: "Raise heater_bed max_temp to 120C (mod maximum)? WARNING: This is above the stock 110C ceiling - confirm your bed surface, adhesive and cabling tolerate 120C. Sustained high bed temps stress the heater and PSU. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/bed-chamber/set-bed-maxtemp.sh 120 &&
+                /etc/init.d/S60klipper restart
+          custom:
+            label: "Custom…"
+            confirm: "Set a custom heater_bed max_temp (111-120C)? WARNING: Above stock 110C - only raise this within your bed surface, adhesive and wiring ratings. Klipper will restart."
+            inputs:
+              - name: BED_MAX
+                label: "max_temp in C (111-120)"
+                placeholder: "115"
+                regex: '^(11[1-9]|120)$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/bed-chamber/set-bed-maxtemp.sh "${BED_MAX}" &&
+                /etc/init.d/S60klipper restart
+        default: default
+
+      heat_soak_macro:
+        label: HEAT_SOAK Macro
+        description: Adds a HEAT_SOAK gcode macro. Heats the bed, then either soaks for a fixed time (MINUTES) or waits until the enclosure reaches a target using the stock cavity sensor (CHAMBER). Blocking - meant for slicer start gcode or manual pre-heating.
+        get_cmd:
+          - bash
+          - -c
+          - test -f /oem/printer_data/config/extended/klipper/heat_soak.cfg && echo "enabled" || echo "disabled"
+        options:
+          enabled:
+            label: Enabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/bed-chamber/heat-soak.cfg /oem/printer_data/config/extended/klipper/heat_soak.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/heat_soak.cfg &&
+                echo "HEAT_SOAK macro installed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          disabled:
+            label: Disabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/heat_soak.cfg &&
+                echo "HEAT_SOAK macro removed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: disabled
