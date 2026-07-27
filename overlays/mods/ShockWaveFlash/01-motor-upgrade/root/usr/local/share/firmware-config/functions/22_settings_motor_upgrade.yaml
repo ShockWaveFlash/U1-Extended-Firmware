@@ -51,6 +51,61 @@ settings:
                 /etc/init.d/S60klipper restart
         default: stock
 
+      xy_dir_invert:
+        label: XY Motor Direction
+        description: Invert the dir_pin of stepper_x/stepper_y. Needed when a replacement motor has a different coil-pair order on its connector, so an axis runs backwards. Check each axis with STEPPER_BUZZ before homing.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/motor_direction.cfg
+            if [ ! -f "$f" ]; then echo none; exit 0; fi
+            x=$(grep -c '^\[stepper_x\]$' "$f")
+            y=$(grep -c '^\[stepper_y\]$' "$f")
+            if [ "$x" -gt 0 ] && [ "$y" -gt 0 ]; then echo both
+            elif [ "$x" -gt 0 ]; then echo x
+            elif [ "$y" -gt 0 ]; then echo y
+            else echo none
+            fi
+        options:
+          none:
+            label: Stock (no inversion)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/motor_direction.cfg &&
+                echo "Motor direction back to stock. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          x:
+            label: Invert X
+            confirm: "Invert the direction of stepper_x? WARNING: On CoreXY a single inverted motor changes which diagonal each belt drives - verify with STEPPER_BUZZ STEPPER=stepper_x and be ready to power off during the first homing attempt, because sensorless homing can drive into the frame. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-direction.sh x &&
+                /etc/init.d/S60klipper restart
+          y:
+            label: Invert Y
+            confirm: "Invert the direction of stepper_y? WARNING: On CoreXY a single inverted motor changes which diagonal each belt drives - verify with STEPPER_BUZZ STEPPER=stepper_y and be ready to power off during the first homing attempt, because sensorless homing can drive into the frame. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-direction.sh y &&
+                /etc/init.d/S60klipper restart
+          both:
+            label: Invert X and Y
+            confirm: "Invert the direction of both XY motors? This mirrors all XY motion; on CoreXY it is the correct fix when both replacement motors are wired the other way round. Verify with STEPPER_BUZZ on both steppers and be ready to power off during the first homing attempt. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/motor-upgrade/set-direction.sh both &&
+                /etc/init.d/S60klipper restart
+        default: none
+
       xy_run_current:
         label: XY Run Current
         description: TMC2240 run_current for stepper_x/stepper_y. Stock is 1.2A. Values above 1.2A need additional TMC driver cooling; 1.77A is the LDO-2504 RMS ceiling. Selecting any value here replaces the "TMC Reduced Current" tweak.
@@ -408,5 +463,36 @@ settings:
               - |
                 rm -f /oem/printer_data/config/extended/klipper/motor_macros.cfg &&
                 echo "Commissioning macros removed. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+        default: disabled
+
+      xy_force_move:
+        label: Force Move (diagnostics)
+        description: Enables FORCE_MOVE and SET_KINEMATIC_POSITION so single steppers can be moved without homing - the direct way to check motor direction and belt routing after a motor swap. STEPPER_BUZZ works without this. Leave disabled for normal printing.
+        get_cmd:
+          - bash
+          - -c
+          - test -f /oem/printer_data/config/extended/klipper/force_move.cfg && echo "enabled" || echo "disabled"
+        options:
+          enabled:
+            label: Enabled
+            confirm: "Enable FORCE_MOVE? These commands bypass all kinematic and endstop checks - a wrong axis or distance drives the gantry into the frame. Use small distances (10mm) and disable it again when done. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                mkdir -p /oem/printer_data/config/extended/klipper &&
+                cp -v /usr/local/share/firmware-config/motor-upgrade/force-move.cfg /oem/printer_data/config/extended/klipper/force_move.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/force_move.cfg &&
+                echo "FORCE_MOVE enabled. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          disabled:
+            label: Disabled
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/force_move.cfg &&
+                echo "FORCE_MOVE disabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
         default: disabled
