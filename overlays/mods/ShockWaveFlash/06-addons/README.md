@@ -8,7 +8,7 @@ recipe (both support `--uninstall`), output streamed to the browser.
 
 | Add-on | Effect |
 |---|---|
-| Spoolman | Filament spool tracking (Donkie/Spoolman v0.23.1, SQLite). Web UI + API on port 7912, wired into Moonraker (`[spoolman]`) so Fluidd/Mainsail get the spool picker. DB lives in `printer_data` and survives uninstall + firmware upgrades. |
+| Spoolman | Filament spool tracking (Donkie/Spoolman v0.26.0, SQLite). Web UI + API on port 7912, wired into Moonraker (`[spoolman]`) so Fluidd/Mainsail get the spool picker. DB lives in `printer_data` and survives uninstall + firmware upgrades. |
 | Git | Working `git` binary (aarch64, from Debian's official arm64 `.deb`) plus the `libcurl-gnutls.so.4` ABI shim its HTTPS remote helper needs. |
 
 Both recipes hard-require **Overlay Persistence** (`/oem/.debug`), so this

@@ -6,7 +6,7 @@
 #
 # What it installs
 # ----------------
-# Spoolman v0.23.1 (Donkie/Spoolman) with the SQLite backend, plus:
+# Spoolman v0.26.0 (Donkie/Spoolman) with the SQLite backend, plus:
 #   - Python venv at /home/lava/spoolman/.venv
 #   - Data + SQLite DB at /home/lava/printer_data/spoolman/
 #     (that path is bind-mounted from /userdata, always persistent)
@@ -27,11 +27,15 @@
 #      `httptools`, and `uvloop` deps. SQLite mode doesn't need any of them and
 #      some fail to install without headers/compiler.
 #
-#   2b. FastAPI and starlette are hard-pinned. Spoolman v0.23.1's `client.py`
-#       calls `FileResponse(..., method=method)`, which starlette >=1.0 removed.
-#       Upstream's permissive `fastapi~=0.115` lets pip resolve to newer
-#       fastapi/starlette that break every static-file request with a 500.
-#       Pin to fastapi 0.115.x + starlette 0.41.x and the UI works.
+#   2b. The old hard pins on fastapi/starlette are GONE as of v0.26.0.
+#       Background: v0.23.1's `client.py` called `FileResponse(..., method=method)`,
+#       a kwarg starlette >=1.0 removed, so any newer starlette turned every
+#       static-file request into a 500 and the pins were the only fix.
+#       Upstream dropped that kwarg in v0.26.0 (client.py now calls
+#       `FileResponse(full_path, status_code=..., stat_result=...)` and lets
+#       starlette derive HEAD handling from the request scope), so we follow
+#       upstream's own `fastapi~=0.115` again and let pip pick the matching
+#       starlette. Do NOT reintroduce the pins without re-checking client.py.
 #
 #   3. Spoolman's startup calls `subprocess.run(["alembic", ...])` via PATH
 #      lookup, not the venv's bin. So we set PATH in .env with the venv bin
@@ -59,7 +63,7 @@
 
 set -eu
 
-SPOOLMAN_VERSION=v0.23.1
+SPOOLMAN_VERSION=v0.26.0
 SPOOLMAN_ZIP_URL="https://github.com/Donkie/Spoolman/releases/download/${SPOOLMAN_VERSION}/spoolman.zip"
 SPOOLMAN_DIR=/home/lava/spoolman
 SPOOLMAN_DATA=/home/lava/printer_data/spoolman
@@ -182,20 +186,19 @@ cat > "$SPOOLMAN_DIR/requirements.txt" <<'REQEOF'
 # Trimmed from pyproject.toml for SQLite-only mode. See install script header
 # for the rationale on which upstream deps we skip.
 #
-# NOTE: fastapi and starlette are hard-pinned. Spoolman v0.23.1's client.py
-# calls FileResponse(..., method=method) which was removed in starlette >=1.0.
-# The permissive `~=` specifiers in Spoolman's upstream pyproject.toml let pip
-# resolve to newer versions that break the web UI at 500 errors on every
-# static-file request. Pinning to the 0.41.x line keeps the UI working.
-fastapi>=0.115,<0.116
-starlette>=0.40,<0.42
+# NOTE: no fastapi/starlette pins here anymore. v0.23.1 needed them because its
+# client.py called FileResponse(..., method=method), removed in starlette >=1.0.
+# v0.26.0 dropped that kwarg upstream, so we track upstream's own `fastapi~=0.115`
+# and let pip resolve the matching starlette. Re-check spoolman/client.py before
+# reintroducing any pin.
+fastapi~=0.115
 uvicorn~=0.34
 SQLAlchemy[aiosqlite,asyncio]~=2.0
 pydantic~=2.10
 platformdirs~=4.3
 alembic~=1.15
 scheduler~=0.8
-setuptools~=78.1
+setuptools~=83.0
 WebSockets~=15.0
 prometheus-client~=0.21
 httpx~=0.28
