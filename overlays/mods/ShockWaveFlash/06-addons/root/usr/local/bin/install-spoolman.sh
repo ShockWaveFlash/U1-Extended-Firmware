@@ -6,7 +6,7 @@
 #
 # What it installs
 # ----------------
-# Spoolman v0.26.0 (Donkie/Spoolman) with the SQLite backend, plus:
+# Spoolman v0.26.1 (Donkie/Spoolman) with the SQLite backend, plus:
 #   - Python venv at /home/lava/spoolman/.venv
 #   - Data + SQLite DB at /home/lava/printer_data/spoolman/
 #     (that path is bind-mounted from /userdata, always persistent)
@@ -63,7 +63,7 @@
 
 set -eu
 
-SPOOLMAN_VERSION=v0.26.0
+SPOOLMAN_VERSION=v0.26.1
 SPOOLMAN_ZIP_URL="https://github.com/Donkie/Spoolman/releases/download/${SPOOLMAN_VERSION}/spoolman.zip"
 SPOOLMAN_DIR=/home/lava/spoolman
 SPOOLMAN_DATA=/home/lava/printer_data/spoolman
