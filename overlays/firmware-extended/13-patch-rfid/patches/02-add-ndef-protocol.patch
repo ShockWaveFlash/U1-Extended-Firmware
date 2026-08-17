@@ -6,7 +6,7 @@ diff -uNr rootfs.original/home/lava/klipper/klippy/extras/filament_detect.py roo
  from . import filament_protocol
 +from . import filament_protocol_ndef
  from . import fm175xx_reader
-
+ 
 @@ -123,6 +124,14 @@
                      filament_info = info
                  else:
@@ -21,4 +21,4 @@ diff -uNr rootfs.original/home/lava/klipper/klippy/extras/filament_detect.py roo
 +                    logging.error("channel[%d] NDEF parse err....", channel)
          else:
              is_clear = True
-
+ 
