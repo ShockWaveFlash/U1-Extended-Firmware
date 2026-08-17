@@ -121,7 +121,28 @@ if FILES=$(find "$ROOTFS_DIR" -type f -exec file {} + | grep "ELF" | grep -v "AR
 fi
 
 echo ">> Create squash filesystem..."
-mksquashfs "$ROOTFS_DIR" "$BUILD_DIR/rk-unpacked/rootfs-v2.img" -comp gzip
+# Take the compression settings from the stock rootfs instead of hardcoding them.
+# Snapmaker switched from gzip to lz4 in 1.6.0 and dropped CONFIG_SQUASHFS_ZLIB from
+# the kernel, so a hardcoded compressor produces an image the kernel cannot mount.
+SQUASH_INFO=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs.img")
+SQUASH_COMP=$(echo "$SQUASH_INFO" | awk '/^Compression/ {print $2}')
+SQUASH_BLOCK=$(echo "$SQUASH_INFO" | awk '/^Block size/ {print $3}')
+SQUASH_XHC=""
+echo "$SQUASH_INFO" | grep -q -- "-Xhc" && SQUASH_XHC="-Xhc"
+if [ -z "$SQUASH_COMP" ] || [ -z "$SQUASH_BLOCK" ]; then
+  echo "!! Error: could not read compression settings from the stock rootfs.img"
+  exit 1
+fi
+echo ">> Using -comp $SQUASH_COMP $SQUASH_XHC -b $SQUASH_BLOCK (as in stock firmware)"
+mksquashfs "$ROOTFS_DIR" "$BUILD_DIR/rk-unpacked/rootfs-v2.img" \
+  -comp "$SQUASH_COMP" $SQUASH_XHC -b "$SQUASH_BLOCK"
+
+echo ">> Verifying the new rootfs matches the stock compression..."
+NEW_COMP=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs-v2.img" | awk '/^Compression/ {print $2}')
+if [ "$NEW_COMP" != "$SQUASH_COMP" ]; then
+  echo "!! Error: new rootfs uses '$NEW_COMP' but the kernel expects '$SQUASH_COMP'"
+  exit 1
+fi
 
 echo ">> Replace rootfs.img in firmware..."
 mv -v "$BUILD_DIR/rk-unpacked"/{rootfs-v2,rootfs}.img
