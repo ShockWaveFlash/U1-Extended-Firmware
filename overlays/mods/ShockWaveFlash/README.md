@@ -116,3 +116,33 @@ Klipper. State is derived from the on-disk files (`get_cmd`), nothing else.
 - [x] Jinja2 parse of the `HEAT_SOAK` and `CALIBRATE_INPUT_SHAPER` gcode templates
 - [ ] Full firmware build
 - [ ] On-device validation (get_cmd state detection, Klipper restart, autotune plugin load on Snapmaker's Klipper fork, `[heater_bed] max_temp` last-wins override, `HEAT_SOAK` chamber/timer modes against the real cavity sensor, `[input_shaper]` last-wins override, `CALIBRATE_INPUT_SHAPER` against the real accelerometer/`resonance_tester`)
+
+# Mod: Klipper Macros (06-klipper-makros)
+
+Ships hand-written Klipper macro configs as **defaults**. Unlike the other mods
+this one has **no firmware-config UI switches** — the files are dropped into
+`/usr/local/share/firmware-config/extended/klipper/`, and `S49extended-config`
+copies them to `printer_data/config/extended/klipper/` on boot using `cp -rn`:
+
+- a file that does **not** exist on the printer is created,
+- a file that **does** exist is never overwritten; if it differs, the image
+  version is placed next to it as `<name>.cfg.default` for comparison.
+
+So the image is a **fallback and a fresh-install source**, not an update
+mechanism. To roll out a newer version, delete the file on the printer first.
+
+| File | What it does |
+|---|---|
+| `shaper_persist.cfg` | Makes input shaper results survive a restart (the fork's `save_params` is commented out). Wraps `SHAPER_CALIBRATE`: full sweep when idle, narrow band during a print, internal `FREQ_*` calls passed through. Adds `SHAPER_SERVICE`, `SHAPER_SAVE`, `SHAPER_SHOW`. |
+| `mesh_heatsoak.cfg` | Heat-soak before every bed mesh (frame thermal drift, tau = 8.1 min): 10 min at >=90 C, 5 min at 55-89 C, none below. Raises `idle_timeout` for the wait, then restores it. Chains in front of the adaptive-mesh wrapper. |
+| `hotend_service.cfg` | One-button calibration run after a hotend/nozzle swap. |
+| `pid_autotune.cfg` | `PID_ALL` — PID autotune for all four toolheads plus load/unload helpers. |
+| `filament_batch.cfg` | Load/unload filament in all four toolheads in one go. |
+| `heat_soak.cfg` | `HEAT_SOAK` for ABS/ASA without active chamber heating (fixed dwell, never `TEMPERATURE_WAIT` — that once blocked the whole command queue). |
+| `print_modes.cfg` | Stealth / Normal mode (night mode), modelled on Prusa's. |
+| `nozzle_fan_speed.cfg` | Hotend (heatbreak) fans limited to 70 % for noise. |
+| `motor_hold_current.cfg` | Reduced XY hold current. |
+
+Note: `heat_soak.cfg`, `nozzle_fan_speed.cfg` and `motor_hold_current.cfg` overlap
+with settings the UI mods can write. The UI switches keep priority — they rewrite
+their own file, and `cp -rn` will not touch it.
