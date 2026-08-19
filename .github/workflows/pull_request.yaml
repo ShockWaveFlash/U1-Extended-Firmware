@@ -97,6 +97,7 @@ jobs:
     - name: Build with Extended Fluidd firmware
       env:
         SQUASH_COMP: zstd
+        SQUASH_BLOCK: 131072
       run: ./dev.sh make build PROFILE=extended-ShockWaveFlash-paxx12 OUTPUT_FILE=U1_extended_${{ env.GIT_VERSION }}_upgrade.bin
 
     - uses: actions/upload-artifact@v4

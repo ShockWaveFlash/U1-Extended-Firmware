@@ -126,8 +126,8 @@ echo ">> Create squash filesystem..."
 # the kernel, so a hardcoded compressor produces an image the kernel cannot mount.
 SQUASH_INFO=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs.img")
 STOCK_COMP=$(echo "$SQUASH_INFO" | awk '/^Compression/ {print $2}')
-SQUASH_BLOCK=$(echo "$SQUASH_INFO" | awk '/^Block size/ {print $3}')
-if [ -z "$STOCK_COMP" ] || [ -z "$SQUASH_BLOCK" ]; then
+STOCK_BLOCK=$(echo "$SQUASH_INFO" | awk '/^Block size/ {print $3}')
+if [ -z "$STOCK_COMP" ] || [ -z "$STOCK_BLOCK" ]; then
   echo "!! Error: could not read compression settings from the stock rootfs.img"
   exit 1
 fi
@@ -136,6 +136,17 @@ fi
 # ~45 MB smaller than lz4 here). Only compressors the kernel was built with can be used,
 # so the choice is verified against the kernel config shipped in the rootfs below.
 SQUASH_COMP="${SQUASH_COMP:-$STOCK_COMP}"
+# SQUASH_BLOCK may override the stock block size. Larger blocks compress better across file
+# boundaries (128K saves ~6 MB here) at the cost of a proportionally larger decompression
+# buffer in the kernel. Squashfs supports up to 1 MiB and has no kernel config knob for it.
+SQUASH_BLOCK="${SQUASH_BLOCK:-$STOCK_BLOCK}"
+if [ "$SQUASH_BLOCK" != "$STOCK_BLOCK" ]; then
+  if [ "$SQUASH_BLOCK" -gt 1048576 ] 2>/dev/null; then
+    echo "!! Error: SQUASH_BLOCK=$SQUASH_BLOCK exceeds the 1 MiB squashfs maximum."
+    exit 1
+  fi
+  echo ">> Overriding stock block size '$STOCK_BLOCK' with '$SQUASH_BLOCK'"
+fi
 SQUASH_XHC=""
 if [ "$SQUASH_COMP" = "lz4" ]; then
   # -Xhc is an lz4-only option; it is what stock uses.
@@ -163,9 +174,15 @@ mksquashfs "$ROOTFS_DIR" "$BUILD_DIR/rk-unpacked/rootfs-v2.img" \
   -comp "$SQUASH_COMP" $SQUASH_XHC -b "$SQUASH_BLOCK"
 
 echo ">> Verifying the new rootfs uses the requested compression..."
-NEW_COMP=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs-v2.img" | awk '/^Compression/ {print $2}')
+NEW_INFO=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs-v2.img")
+NEW_COMP=$(echo "$NEW_INFO" | awk '/^Compression/ {print $2}')
 if [ "$NEW_COMP" != "$SQUASH_COMP" ]; then
   echo "!! Error: new rootfs uses '$NEW_COMP' but '$SQUASH_COMP' was requested"
+  exit 1
+fi
+NEW_BLOCK=$(echo "$NEW_INFO" | awk '/^Block size/ {print $3}')
+if [ "$NEW_BLOCK" != "$SQUASH_BLOCK" ]; then
+  echo "!! Error: new rootfs uses block size '$NEW_BLOCK' but '$SQUASH_BLOCK' was requested"
   exit 1
 fi
 

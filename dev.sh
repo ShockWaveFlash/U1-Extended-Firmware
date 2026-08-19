@@ -13,6 +13,6 @@ fi
 TTY_FLAG=""
 [[ -t 0 ]] && TTY_FLAG="-it"
 
-ENV_FLAGS="-e GIT_VERSION -e CI -e PASSWORD -e SQUASH_COMP"
+ENV_FLAGS="-e GIT_VERSION -e CI -e PASSWORD -e SQUASH_COMP -e SQUASH_BLOCK"
 
 exec docker run --rm $DOCKER_OPTS $TTY_FLAG $ENV_FLAGS -w "$PWD" -v "$PWD:$PWD" "$IMAGE_NAME" "$@"
