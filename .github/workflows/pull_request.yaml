@@ -95,7 +95,9 @@ jobs:
       run: ./dev.sh make firmware
 
     - name: Build with Extended Fluidd firmware
-      run: ./dev.sh make build PROFILE=extended-ShockWaveFlash OUTPUT_FILE=U1_extended_${{ env.GIT_VERSION }}_upgrade.bin
+      env:
+        SQUASH_COMP: zstd
+      run: ./dev.sh make build PROFILE=extended-ShockWaveFlash-paxx12 OUTPUT_FILE=U1_extended_${{ env.GIT_VERSION }}_upgrade.bin
 
     - uses: actions/upload-artifact@v4
       with:

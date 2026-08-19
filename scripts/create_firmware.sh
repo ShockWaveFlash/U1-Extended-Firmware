@@ -125,22 +125,61 @@ echo ">> Create squash filesystem..."
 # Snapmaker switched from gzip to lz4 in 1.6.0 and dropped CONFIG_SQUASHFS_ZLIB from
 # the kernel, so a hardcoded compressor produces an image the kernel cannot mount.
 SQUASH_INFO=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs.img")
-SQUASH_COMP=$(echo "$SQUASH_INFO" | awk '/^Compression/ {print $2}')
+STOCK_COMP=$(echo "$SQUASH_INFO" | awk '/^Compression/ {print $2}')
 SQUASH_BLOCK=$(echo "$SQUASH_INFO" | awk '/^Block size/ {print $3}')
-SQUASH_XHC=""
-echo "$SQUASH_INFO" | grep -q -- "-Xhc" && SQUASH_XHC="-Xhc"
-if [ -z "$SQUASH_COMP" ] || [ -z "$SQUASH_BLOCK" ]; then
+if [ -z "$STOCK_COMP" ] || [ -z "$SQUASH_BLOCK" ]; then
   echo "!! Error: could not read compression settings from the stock rootfs.img"
   exit 1
 fi
-echo ">> Using -comp $SQUASH_COMP $SQUASH_XHC -b $SQUASH_BLOCK (as in stock firmware)"
+
+# SQUASH_COMP may override the stock compressor to gain partition headroom (zstd packs
+# ~45 MB smaller than lz4 here). Only compressors the kernel was built with can be used,
+# so the choice is verified against the kernel config shipped in the rootfs below.
+SQUASH_COMP="${SQUASH_COMP:-$STOCK_COMP}"
+SQUASH_XHC=""
+if [ "$SQUASH_COMP" = "lz4" ]; then
+  # -Xhc is an lz4-only option; it is what stock uses.
+  echo "$SQUASH_INFO" | grep -q -- "-Xhc" && SQUASH_XHC="-Xhc"
+fi
+
+if [ "$SQUASH_COMP" != "$STOCK_COMP" ]; then
+  KERNEL_CONFIG="$ROOTFS_DIR/info/config-6.1"
+  KERNEL_OPT="CONFIG_SQUASHFS_$(echo "$SQUASH_COMP" | tr '[:lower:]' '[:upper:]')=y"
+  if [ ! -f "$KERNEL_CONFIG" ]; then
+    echo "!! Error: SQUASH_COMP=$SQUASH_COMP requested but $KERNEL_CONFIG is missing,"
+    echo "!! so kernel support cannot be verified. Refusing to build an unbootable image."
+    exit 1
+  fi
+  if ! grep -q "^$KERNEL_OPT\$" "$KERNEL_CONFIG"; then
+    echo "!! Error: the kernel lacks $KERNEL_OPT - an image compressed with"
+    echo "!! '$SQUASH_COMP' would not mount. Stock uses '$STOCK_COMP'."
+    exit 1
+  fi
+  echo ">> Overriding stock compressor '$STOCK_COMP' with '$SQUASH_COMP' ($KERNEL_OPT present)"
+fi
+
+echo ">> Using -comp $SQUASH_COMP $SQUASH_XHC -b $SQUASH_BLOCK"
 mksquashfs "$ROOTFS_DIR" "$BUILD_DIR/rk-unpacked/rootfs-v2.img" \
   -comp "$SQUASH_COMP" $SQUASH_XHC -b "$SQUASH_BLOCK"
 
-echo ">> Verifying the new rootfs matches the stock compression..."
+echo ">> Verifying the new rootfs uses the requested compression..."
 NEW_COMP=$(unsquashfs -s "$BUILD_DIR/rk-unpacked/rootfs-v2.img" | awk '/^Compression/ {print $2}')
 if [ "$NEW_COMP" != "$SQUASH_COMP" ]; then
-  echo "!! Error: new rootfs uses '$NEW_COMP' but the kernel expects '$SQUASH_COMP'"
+  echo "!! Error: new rootfs uses '$NEW_COMP' but '$SQUASH_COMP' was requested"
+  exit 1
+fi
+
+echo ">> Checking the new rootfs fits into the system partition..."
+PART_SECTORS=$(grep -oE '0x[0-9a-fA-F]+@0x[0-9a-fA-F]+\(system_a\)' "$BUILD_DIR/rk-unpacked/parameter.txt" | cut -d@ -f1)
+if [ -z "$PART_SECTORS" ]; then
+  echo "!! Error: could not read the system_a partition size from parameter.txt"
+  exit 1
+fi
+PART_SIZE=$(( PART_SECTORS * 512 ))
+ROOTFS_SIZE=$(stat -c %s "$BUILD_DIR/rk-unpacked/rootfs-v2.img")
+echo "   rootfs $ROOTFS_SIZE B of $PART_SIZE B ($(( ROOTFS_SIZE * 100 / PART_SIZE ))% used)"
+if [ "$ROOTFS_SIZE" -gt "$PART_SIZE" ]; then
+  echo "!! Error: the rootfs is larger than the system partition and would not flash."
   exit 1
 fi
 
