@@ -120,6 +120,16 @@ if FILES=$(find "$ROOTFS_DIR" -type f -exec file {} + | grep "ELF" | grep -v "AR
   exit 1
 fi
 
+# Overlays that pip-install packages leave their download caches behind (~77 MB of wheels
+# that are already unpacked into site-packages). Neither path exists in the stock rootfs.
+echo ">> Removing package manager caches..."
+for c in "$ROOTFS_DIR/root/.cache" "$ROOTFS_DIR/cache"; do
+  if [ -d "$c" ]; then
+    echo "   dropping $(du -sm "$c" | cut -f1) MB from ${c#$ROOTFS_DIR}"
+    rm -rf "$c"
+  fi
+done
+
 echo ">> Create squash filesystem..."
 # Take the compression settings from the stock rootfs instead of hardcoding them.
 # Snapmaker switched from gzip to lz4 in 1.6.0 and dropped CONFIG_SQUASHFS_ZLIB from
