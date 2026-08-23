@@ -1,0 +1,44 @@
+{
+    "print_job": {
+        "flow_calibrate": [
+            true,
+            false,
+            false,
+            false
+        ],
+        "preextrude_filament": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    }
+}

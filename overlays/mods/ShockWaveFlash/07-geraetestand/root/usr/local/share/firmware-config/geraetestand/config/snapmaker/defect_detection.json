@@ -1,0 +1,24 @@
+{
+    "main_enable": true,
+    "sen_high_factor": 0.2,
+    "sen_low_factor": 0.5,
+    "clean_bed": {
+        "enable": true,
+        "check_window": 3,
+        "sensitivity": "low"
+    },
+    "noodle": {
+        "enable": true,
+        "check_window": 10,
+        "sensitivity": "low"
+    },
+    "residue": {
+        "enable": true,
+        "check_window": 10,
+        "sensitivity": "low"
+    },
+    "nozzle": {
+        "enable": false,
+        "sensitivity": "low"
+    }
+}

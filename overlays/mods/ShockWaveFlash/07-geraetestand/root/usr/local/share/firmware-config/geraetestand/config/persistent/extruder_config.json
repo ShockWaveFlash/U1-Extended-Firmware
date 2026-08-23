@@ -1,0 +1,30 @@
+{
+    "extruder": {
+        "xy_park_position": [
+            34.6,
+            332.2
+        ],
+        "y_idle_position": 250.0
+    },
+    "extruder1": {
+        "xy_park_position": [
+            102.3,
+            332.2
+        ],
+        "y_idle_position": 250.0
+    },
+    "extruder2": {
+        "xy_park_position": [
+            169.4,
+            332.2
+        ],
+        "y_idle_position": 250.0
+    },
+    "extruder3": {
+        "xy_park_position": [
+            236.9,
+            332.2
+        ],
+        "y_idle_position": 250.0
+    }
+}

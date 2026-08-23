@@ -146,3 +146,29 @@ mechanism. To roll out a newer version, delete the file on the printer first.
 Note: `heat_soak.cfg`, `nozzle_fan_speed.cfg` and `motor_hold_current.cfg` overlap
 with settings the UI mods can write. The UI switches keep priority — they rewrite
 their own file, and `cp -rn` will not touch it.
+
+## 07-geraetestand — full device-state restore
+
+Ships a complete snapshot of `printer_data/config` as it stood on the printer on
+2026-08-23 (104 files, 1.2 MB) and puts back anything that is missing after a flash.
+
+The init script `/etc/init.d/S49zgeraetestand` runs after `S49extended-config` and does
+one thing: `cp -rn` from the image into `printer_data/config`, then `chown -R lava:lava`.
+`-n` is no-clobber — **existing files are never overwritten**. So:
+
+- whatever survived the flash stays untouched,
+- whatever was lost is restored from the image,
+- later calibrations are never reset on a reboot.
+
+Covered: all `snapmaker/*.json` (PID for all four toolheads, input shaper, bed meshes,
+defect detection, flow calibrator, filament parameters, product info), all
+`persistent/*.json` (high-flow `volume_type`, homing origin, extruder config, switch
+recorder), `extended/` (`extended2.cfg` with the camera mode, moonraker fragments, all
+klipper overlays including the UI-written `nozzle_fans.cfg`), plus `moonraker.conf`,
+`gui_config.json` and the factory/printer cfg variants.
+
+Kill switch: `touch /oem/.no-geraetestand` disables the restore.
+
+⚠️ Same caveat as above: this is a **fallback**, not an update mechanism. Refreshing a
+file in the image does not push it to a printer that still has the old one — delete it
+on the printer first.

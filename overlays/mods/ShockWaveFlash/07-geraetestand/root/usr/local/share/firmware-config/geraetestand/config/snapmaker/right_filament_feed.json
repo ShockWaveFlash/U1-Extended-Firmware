@@ -1,0 +1,10 @@
+{
+    "auto_mode": [
+        true,
+        true
+    ],
+    "load_finish": [
+        false,
+        false
+    ]
+}

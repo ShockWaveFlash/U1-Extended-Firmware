@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# Geraetestand-Wiederherstellung (Mod-Overlay 07)
+#
+# Legt nach einem Firmware-Flash ALLE Konfigurations-, Kalibrier- und Zustandsdateien
+# zurueck, die im Image mitgeliefert werden -- aber NUR, wenn sie fehlen.
+#
+# Das entscheidende Werkzeug ist `cp -rn` (no-clobber): vorhandene Dateien werden
+# NIEMALS ueberschrieben. Damit gilt:
+#   - Was den Flash ueberlebt hat, bleibt unangetastet.
+#   - Was verloren ging, wird aus dem Image ergaenzt.
+#   - Spaetere Kalibrierungen werden bei keinem Neustart zurueckgesetzt.
+#
+# Laeuft absichtlich NACH S49extended-config (Praefix S49z), damit dessen
+# extended/-Behandlung zuerst greift.
+#
+# Notbremse: `touch /oem/.no-geraetestand` schaltet die Wiederherstellung ab.
+
+SRC="/usr/local/share/firmware-config/geraetestand/config"
+DST="/home/lava/printer_data/config"
+
+start() {
+    if [ -f /oem/.no-geraetestand ]; then
+        echo "Geraetestand-Wiederherstellung deaktiviert (/oem/.no-geraetestand)"
+        return 0
+    fi
+
+    if [ ! -d "$SRC" ]; then
+        echo "Geraetestand: Quellverzeichnis fehlt, nichts zu tun"
+        return 0
+    fi
+
+    mkdir -p "$DST"
+
+    echo "Geraetestand: fehlende Konfigurationsdateien ergaenzen (ohne Ueberschreiben)..."
+    cp -rn "$SRC/." "$DST/"
+
+    # Klipper laeuft als lava -- als root erzeugte Dateien haetten sonst 600 root:root
+    # und Klipper startet gar nicht ("Unable to open config file").
+    echo "Geraetestand: Eigentuemer auf lava setzen..."
+    chown -R lava:lava "$DST"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        ;;
+    restart|reload)
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0

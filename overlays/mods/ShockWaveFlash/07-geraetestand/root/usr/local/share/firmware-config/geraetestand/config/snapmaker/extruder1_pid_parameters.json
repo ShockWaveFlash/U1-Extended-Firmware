@@ -1,0 +1,11 @@
+{
+  "default": {
+    "Kp": 34.67274458146769,
+    "Ki": 11.007235704480314,
+    "Kd": 27.30474864643722,
+    "full_power_threshold": null,
+    "zero_power_threshold": null,
+    "settle_delta": 2.0,
+    "settle_slope": 0.5
+  }
+}
