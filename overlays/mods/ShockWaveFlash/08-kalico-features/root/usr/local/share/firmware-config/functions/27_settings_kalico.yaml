@@ -1,0 +1,150 @@
+settings:
+  kalico:
+    label: Kalico Features
+    items:
+
+      shaper_mode:
+        label: Input Shaper Type
+        description: >-
+          Switches between classic input shapers and Kalico's smooth input shapers.
+          Smooth shapers cancel vibration over a frequency range instead of a single
+          point, which usually gives cleaner corners - but they cost noticeably more
+          CPU on the host. The U1 runs a Rockchip RK3562 (4x Cortex-A53), which is
+          below Kalico's recommended hardware, so watch the "sysload" value in
+          klippy.log after switching. Requires the Kalico tree to be active.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_shaper.cfg
+            if [ ! -f "$f" ]; then echo stock; exit 0; fi
+            v=$(grep -m1 '^shaper_type' "$f" | awk '{print $2}')
+            case "$v" in
+              smooth_ei)       echo smooth_ei ;;
+              smooth_2hump_ei) echo smooth_2hump_ei ;;
+              smooth_mzv)      echo smooth_mzv ;;
+              *)               echo custom ;;
+            esac
+        options:
+          stock:
+            label: Classic (stock)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/kalico_shaper.cfg &&
+                echo "Back to the classic input shaper. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          smooth_mzv:
+            label: smooth_mzv (mild)
+            confirm: "Switch to the smooth_mzv input smoother? Lowest CPU cost of the smooth family. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-shaper.sh smooth_mzv &&
+                /etc/init.d/S60klipper restart
+          smooth_ei:
+            label: smooth_ei (balanced)
+            confirm: "Switch to the smooth_ei input smoother? Good default of the smooth family. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-shaper.sh smooth_ei &&
+                /etc/init.d/S60klipper restart
+          smooth_2hump_ei:
+            label: smooth_2hump_ei (widest)
+            confirm: "Switch to smooth_2hump_ei? Widest vibration cancelling, but the highest CPU cost - check sysload in klippy.log afterwards. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-shaper.sh smooth_2hump_ei &&
+                /etc/init.d/S60klipper restart
+
+      pa_model:
+        label: Pressure Advance Model
+        description: >-
+          Classic pressure advance assumes extruder pressure rises linearly with
+          flow rate. Kalico can use non-linear models instead, which track reality
+          better at high flow - relevant for the high-flow hotends. Calibrate with
+          the PA test tower (PA_TEST macro) after switching; the old PA value will
+          not carry over unchanged. Requires the Kalico tree to be active.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_pa.cfg
+            if [ ! -f "$f" ]; then echo linear; exit 0; fi
+            v=$(grep -m1 '^pressure_advance_model' "$f" | awk '{print $2}')
+            case "$v" in
+              tanh)   echo tanh ;;
+              recipr) echo recipr ;;
+              *)      echo custom ;;
+            esac
+        options:
+          linear:
+            label: linear (stock)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/kalico_pa.cfg &&
+                echo "Back to linear pressure advance. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          tanh:
+            label: tanh (non-linear)
+            confirm: "Switch all four extruders to the tanh pressure advance model? You must re-run PA calibration afterwards. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-pa-model.sh tanh &&
+                /etc/init.d/S60klipper restart
+          recipr:
+            label: recipr (non-linear)
+            confirm: "Switch all four extruders to the recipr pressure advance model? You must re-run PA calibration afterwards. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-pa-model.sh recipr &&
+                /etc/init.d/S60klipper restart
+
+      heater_control:
+        label: Hotend Temperature Control
+        description: >-
+          PID reacts to temperature error. MPC (Model Predictive Control) models the
+          hotend physically - heater power, block heat capacity, filament flow and
+          fan cooling - and predicts what it needs. It usually holds temperature far
+          better during flow and fan changes and needs no per-temperature tuning.
+          Values preset for the U1 hotends - 48 W ceramic heater, part cooling fan
+          per toolhead. ⚠ Run MPC_CALIBRATE HEATER=extruder (and extruder1..3) once
+          per hotend after switching; without calibration MPC uses rough estimates.
+          The bed stays on PID. Requires the Kalico tree to be active.
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_mpc.cfg
+            if [ -f "$f" ]; then echo mpc; else echo pid; fi
+        options:
+          pid:
+            label: PID (stock)
+            cmd:
+              - bash
+              - -xc
+              - |
+                rm -f /oem/printer_data/config/extended/klipper/kalico_mpc.cfg &&
+                echo "Hotends back to PID. Restarting Klipper..." &&
+                /etc/init.d/S60klipper restart
+          mpc:
+            label: MPC (model predictive)
+            confirm: "Switch all four hotends to MPC? Remember to run MPC_CALIBRATE for each hotend afterwards - uncalibrated MPC only estimates. Klipper will restart."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-mpc.sh on &&
+                /etc/init.d/S60klipper restart

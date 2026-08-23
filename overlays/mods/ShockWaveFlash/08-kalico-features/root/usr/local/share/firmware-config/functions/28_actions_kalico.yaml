@@ -1,0 +1,57 @@
+actions:
+  kalico:
+    items:
+
+      kalico-status:
+        label: Show Kalico Status
+        description: >-
+          Shows which Klipper tree is running (Snapmaker stock or Kalico) and which
+          Kalico features are currently switched on.
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/status.sh
+        background: false
+        message: "Kalico status:"
+
+      cold-extrude-on:
+        label: Allow Cold Extrusion
+        description: >-
+          Sends M302 P1 - allows extruder moves below the minimum extrusion
+          temperature. Useful for clearing a jam or pulling filament without
+          heating. NOT persistent: a Klipper restart resets it. Needs the Kalico
+          tree; stock Klipper does not know M302.
+        confirm: "Allow cold extrusion? Moving cold filament can strain the extruder gears - use short moves only."
+        cmd:
+          - sh
+          - -c
+          - |
+            /usr/local/bin/curl -s -X POST "http://127.0.0.1:7125/printer/gcode/script?script=M302%20P1" \
+              && echo "Cold extrusion allowed (until the next Klipper restart)."
+        background: false
+        message: "Sending M302 P1..."
+
+      cold-extrude-off:
+        label: Forbid Cold Extrusion
+        description: Sends M302 P0 - restores the normal minimum extrusion temperature.
+        cmd:
+          - sh
+          - -c
+          - |
+            /usr/local/bin/curl -s -X POST "http://127.0.0.1:7125/printer/gcode/script?script=M302%20P0" \
+              && echo "Cold extrusion forbidden again."
+        background: false
+        message: "Sending M302 P0..."
+
+      mpc-calibrate-all:
+        label: Calibrate MPC (all 4 hotends)
+        description: >-
+          Runs MPC_CALIBRATE for extruder, extruder1, extruder2 and extruder3 one
+          after another. Each hotend heats up, then cools with the fan stepping
+          through several speeds. Expect roughly 10-20 minutes PER hotend. Only
+          meaningful once the hotends are switched to MPC.
+        confirm: "Start MPC calibration for ALL FOUR hotends? This heats every hotend in turn and takes up to an hour in total. Remove filament and make sure the nozzles are clean first. Do not print during calibration."
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/mpc-calibrate-all.sh
+        background: true
+        message: "MPC calibration running - follow the console for progress..."
