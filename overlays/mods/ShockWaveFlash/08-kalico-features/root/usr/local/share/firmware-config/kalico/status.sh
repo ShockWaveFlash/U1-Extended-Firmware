@@ -50,13 +50,18 @@ fi
 
 echo ""
 echo "Kaltextrusion (nicht dauerhaft, gilt bis zum Klipper-Neustart):"
+# ⚠ Die Antwort von COLD_EXTRUDE steht NICHT in der HTTP-Antwort (die sagt nur
+# {"result": "ok"}), sondern geht als Konsolenmeldung an Moonrakers gcode_store.
+# Deshalb: abfragen, kurz warten, letzte Meldung dort abholen.
 for E in extruder extruder1 extruder2 extruder3; do
-    A=$(/usr/local/bin/curl -s -X POST \
-        "http://127.0.0.1:7125/printer/gcode/script?script=COLD_EXTRUDE%20HEATER=$E" 2>/dev/null)
+    /usr/local/bin/curl -s -X POST \
+        "http://127.0.0.1:7125/printer/gcode/script?script=COLD_EXTRUDE%20HEATER=$E" \
+        >/dev/null 2>&1
+    A=$(/usr/local/bin/curl -s "http://127.0.0.1:7125/server/gcode_store?count=1" 2>/dev/null)
     case "$A" in
-        *enabled*)  echo "  $E: erlaubt" ;;
-        *disabled*) echo "  $E: gesperrt" ;;
-        *)          echo "  $E: nicht abfragbar (laeuft Kalico?)" ;;
+        *"Cold extrudes are enabled"*)  echo "  $E: erlaubt" ;;
+        *"Cold extrudes are disabled"*) echo "  $E: gesperrt" ;;
+        *)                              echo "  $E: nicht abfragbar (laeuft Kalico?)" ;;
     esac
 done
 
