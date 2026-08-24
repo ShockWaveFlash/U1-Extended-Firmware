@@ -1,0 +1,6 @@
+Kalico-Baum fuer den Snapmaker U1 -- Nutzlast fuer das Firmware-Image.
+Stand:   2026-08-24
+Quelle:  /oem/apps/kalico vom U1 (192.168.178.136), per tar entnommen am 24.08. 18:21
+Branch:  kalico-experimentell (f945355f2) + 9 aus Snapmakers Baum nachkopierte Dateien
+c_helper.so: aarch64, 67744 Byte, md5 28868b74dfe144e867c4c2b57a7a3442
+Umfang:  251 .py-Dateien, 291 Dateien gesamt (ohne *.pyc/__pycache__)

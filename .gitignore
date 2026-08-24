@@ -2,6 +2,10 @@ firmware/
 tmp/
 *.o
 *.so
+# Ausnahme: die vorgebaute aarch64-c_helper.so ist Nutzlast von Overlay 08.
+# Ohne sie startet Kalico auf dem U1 nicht (Laufzeit-C-Bau ist dort abgeschaltet,
+# und im Image gibt es keinen Compiler).
+!overlays/mods/ShockWaveFlash/08-kalico-features/root/usr/local/share/kalico/klippy/chelper/c_helper.so
 tools/upfile/upfile
 tools/rk2918_tools/afptool
 tools/rk2918_tools/img_maker

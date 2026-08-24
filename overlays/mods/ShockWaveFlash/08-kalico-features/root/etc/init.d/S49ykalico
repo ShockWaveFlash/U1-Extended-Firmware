@@ -1,0 +1,121 @@
+#!/bin/sh
+#
+# Kalico-Baum ausrollen (Mod-Overlay 08)
+#
+# Legt den im Image mitgelieferten Kalico-Baum nach /oem/apps/kalico, wo der
+# Umschalter /oem/.klipper-tree (ausgewertet vom Hook /etc/hooks/klipper.d/
+# 10-kalico-tree.sh) ihn erwartet.
+#
+# Noetig, weil / ein overlayfs ist: S01aoverlayfs raeumt bei jedem Boot
+# /oem/overlay/* leer, /etc und /usr/local sind also fluechtig. Persistent sind
+# nur /oem und /userdata -- deshalb Nutzlast ins Image (read-only) und beim Boot
+# nach /oem kopieren. Damit wird die gefaehrliche Marke /oem/.debug ueberfluessig.
+#
+# Praefix S49y: laeuft nach S01aoverlayfs (haengt /oem ein) und vor S60klipper
+# (startet den Baum), aber vor S49zgeraetestand -- die beiden fassen getrennte
+# Verzeichnisse an und stoeren sich nicht.
+#
+# Aktualisierbarkeit: $DST/.image-stand haelt die Kennung des Image-Baums fest.
+# Stimmt sie mit dem Image ueberein, ist nichts zu tun; weicht sie ab (neue
+# Firmware), wird neu ausgerollt. Ein blosses `cp -rn` wuerde beim Update still
+# gar nichts tun, weil das Ziel ja schon existiert.
+#
+# Notbremse: `touch /oem/.no-kalico` schaltet das Ausrollen ab. Der Hook
+# 10-kalico-tree.sh wertet dieselbe Marke aus und bleibt dann bei Snapmakers
+# Baum -- die Notbremse holt den Drucker also wirklich zurueck.
+#
+# WICHTIG: $DST gehoert dem Image. Bei einem Firmware-Wechsel wird der Baum
+# dort ersetzt, eigene Aenderungen an /oem/apps/kalico gehen dabei verloren.
+# Zum Probieren einen eigenen Pfad nehmen und /oem/.klipper-tree darauf zeigen.
+
+SRC="/usr/local/share/kalico"
+DST="/oem/apps/kalico"
+MARKE="$DST/.image-stand"
+
+# Kennung des Image-Baums: Pruefsumme ueber alle seine Dateien. Nur HERKUNFT.txt
+# zu hashen reicht nicht -- eine neue Firmware kann einen geaenderten Baum mit
+# unveraenderter Herkunftsdatei mitbringen, dann fiele das Ausrollen still aus.
+# Kosten am Geraet gemessen: 0,06 s.
+stand() {
+    find "$SRC" -type f -exec md5sum {} + 2>/dev/null | sort -k2 | md5sum | cut -d' ' -f1
+}
+
+start() {
+    if [ -f /oem/.no-kalico ]; then
+        echo "Kalico: Ausrollen deaktiviert (/oem/.no-kalico)"
+        return 0
+    fi
+
+    if [ ! -f "$SRC/klippy/klippy.py" ]; then
+        echo "Kalico: kein Baum im Image, nichts zu tun"
+        return 0
+    fi
+
+    STAND=$(stand)
+    if [ "$STAND" = "$(cat "$MARKE" 2>/dev/null)" ]; then
+        echo "Kalico: Baum ist auf Image-Stand, nichts zu tun"
+        return 0
+    fi
+
+    # Neu ausrollen heisst ersetzen -- das darf nicht unter einem laufenden
+    # Klipper passieren, der womoeglich gerade aus diesem Baum liest.
+    # S60klipper fuehrt eine PID-Datei (start-stop-daemon -p "$PIDFILE",
+    # /var/run/klipper.pid); die ist verlaesslicher als ein pgrep-Muster, das
+    # auch die eigene Shell trifft.
+    if [ -d "$DST" ] && [ -f /var/run/klipper.pid ] \
+       && kill -0 "$(cat /var/run/klipper.pid 2>/dev/null)" 2>/dev/null; then
+        echo "Kalico: klippy laeuft, Ausrollen auf den naechsten Start verschoben"
+        return 0
+    fi
+
+    # Erst vollstaendig daneben aufbauen, dann umhaengen. Ein abgebrochenes
+    # Kopieren (voller Datentraeger, Stromausfall) darf keinen Halbbaum
+    # hinterlassen, aus dem S60klipper anschliessend startet.
+    NEU="$DST.neu"
+    ALT="$DST.alt"
+    echo "Kalico: Baum aus dem Image nach $DST ausrollen..."
+    rm -rf "$NEU" "$ALT"
+    mkdir -p "$NEU"
+    if ! cp -a "$SRC/." "$NEU/"; then
+        echo "Kalico: Kopieren fehlgeschlagen, $DST bleibt unveraendert"
+        rm -rf "$NEU"
+        return 1
+    fi
+
+    # Klipper laeuft als lava und muss in seinem Baum schreiben duerfen (.pyc).
+    echo "Kalico: Eigentuemer auf lava setzen..."
+    chown -R lava:lava "$NEU"
+
+    # Marke erst jetzt setzen -- sie gilt nur fuer einen vollstaendigen Baum.
+    echo "$STAND" > "$NEU/.image-stand"
+
+    # Umhaengen: $NEU und $DST liegen beide auf /oem, mv ist also ein rename(2).
+    if [ -d "$DST" ] && ! mv "$DST" "$ALT"; then
+        echo "Kalico: $DST liess sich nicht beiseiteraeumen, Abbruch"
+        rm -rf "$NEU"
+        return 1
+    fi
+    if ! mv "$NEU" "$DST"; then
+        echo "Kalico: Umhaengen fehlgeschlagen, alten Baum zurueckholen"
+        [ -d "$ALT" ] && mv "$ALT" "$DST"
+        return 1
+    fi
+    rm -rf "$ALT"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        ;;
+    restart|reload)
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0

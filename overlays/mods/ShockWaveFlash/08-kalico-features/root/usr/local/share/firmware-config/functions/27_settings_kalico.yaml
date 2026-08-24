@@ -8,7 +8,7 @@ settings:
         description: >-
           Which host software runs the printer. "Snapmaker stock" is the factory
           Klipper 1.6.0 that came with the firmware; "Kalico" is the merged tree
-          under /home/lava/kalico. The switch is the file /oem/.klipper-tree -
+          under /oem/apps/kalico. The switch is the file /oem/.klipper-tree -
           if it is missing or points nowhere, the stock tree starts. The way back
           is therefore always open, and nothing is flashed either way. Klipper
           restarts when you switch. Not available while printing.

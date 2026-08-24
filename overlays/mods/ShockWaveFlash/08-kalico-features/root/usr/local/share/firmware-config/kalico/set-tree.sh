@@ -7,7 +7,7 @@
 # startet Snapmakers Baum -- der Rueckweg ist also immer offen.
 set -e
 
-ZIEL=/home/lava/kalico
+ZIEL=/oem/apps/kalico
 SCHALTER=/oem/.klipper-tree
 
 # Nicht mitten im Druck umschalten.
@@ -28,7 +28,8 @@ case "${1:-}" in
     kalico)
         if [ ! -f "$ZIEL/klippy/klippy.py" ]; then
             echo "Der Kalico-Baum liegt nicht unter $ZIEL."
-            echo "Erst tools/install-kalico-u1.sh von CT 105 aus laufen lassen."
+            echo "Ausgerollt wird er beim Booten von /etc/init.d/S49ykalico"
+            echo "(Notbremse: /oem/.no-kalico) - notfalls von Hand starten."
             exit 1
         fi
         echo "$ZIEL" > "$SCHALTER"

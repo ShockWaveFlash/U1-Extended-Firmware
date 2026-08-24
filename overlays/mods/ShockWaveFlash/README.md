@@ -172,3 +172,70 @@ Kill switch: `touch /oem/.no-geraetestand` disables the restore.
 ⚠️ Same caveat as above: this is a **fallback**, not an update mechanism. Refreshing a
 file in the image does not push it to a printer that still has the old one — delete it
 on the printer first.
+
+## 08-kalico-features — Kalico tree + feature switches
+
+Ships the merged **Kalico** tree (Kalico's features on top of Snapmaker's Klipper
+fork, 4.6 MB) inside the image and adds a **Kalico Features** settings group plus
+Kalico actions to the firmware-config web UI.
+
+`/` is an overlayfs and `S01aoverlayfs` wipes `/oem/overlay/*` on every boot, so
+`/etc`, `/usr/local` and `/home` are volatile. The payload therefore lives in the
+read-only image under `/usr/local/share/kalico/` and the init script
+`/etc/init.d/S49ykalico` copies it to `/oem/apps/kalico` at boot (only when
+`$DST/.image-stand` differs from the image, never while klippy is running), then
+`chown -R lava:lava`. This makes the dangerous `/oem/.debug` marker unnecessary.
+
+Which tree starts is decided by the hook `/etc/hooks/klipper.d/10-kalico-tree.sh`,
+which `S60klipper` sources in its own shell and which points `KLIPPER` at the tree
+named in the persistent switch file `/oem/.klipper-tree`. If that file is missing,
+empty or points nowhere, Snapmaker's stock Klipper starts — the way back is always
+open, and nothing is flashed either way.
+
+| Setting | Options | Effect |
+|---|---|---|
+| Klipper Tree | Snapmaker stock / Kalico | Writes or removes `/oem/.klipper-tree`, then restarts Klipper. Refuses while printing. |
+| SAVE_CONFIG Location | printer.cfg (default) / Separate file | `/oem/.kalico-separate-autosave` → `KALICO_SEPARATE_AUTOSAVE=1`. ⚠️ The block holds the bed mesh and the PID values of all four hotends; after switching, the stock tree no longer sees them. |
+| Input Shaper Type | Classic (stock) / smooth_mzv / smooth_ei / smooth_2hump_ei | `kalico_shaper.cfg` with `shaper_type_x/y`; frequencies stay in `input_shaper.cfg`. |
+| Pressure Advance Model | linear (stock) / tanh / recipr | `kalico_pa.cfg` with `pressure_advance_model` for all four extruders. Re-run PA calibration afterwards. |
+| Hotend Temperature Control | PID (stock) / MPC | `kalico_mpc.cfg` for all four hotends (48 W heater, part-cooling fan per toolhead). Bed stays on PID. |
+
+| Action | What it does |
+|---|---|
+| Show Kalico Status | Which tree is running, which switches are set, cold-extrude state per hotend |
+| Allow / Forbid Cold Extrusion (all 4) | `COLD_EXTRUDE HEATER=... ENABLE=1/0` for all four hotends (not persistent) |
+| Calibrate MPC (all 4 hotends) | `MPC_CALIBRATE` for extruder..extruder3 in turn (up to an hour) |
+
+All settings write last-wins `.cfg` fragments into `extended/klipper/` and restart
+Klipper; state is derived from the on-disk files (`get_cmd`). The feature switches
+only take effect while the Kalico tree is active.
+
+Kill switch: `touch /oem/.no-kalico` disables the rollout **and** makes the hook
+fall back to Snapmaker's tree, so a damaged Kalico tree can be switched off without
+touching `/oem/.klipper-tree`.
+
+### ⚠️ Required migration step after flashing this image
+
+If `/oem/.debug` exists on the printer, `S01aoverlayfs` keeps the old overlay — and
+the hand-made copy of `10-kalico-tree.sh` in `/oem/overlay/upper/etc/` then *shadows*
+the image's version. The switch would silently keep using the old file. So once, over
+SSH, after flashing:
+
+```sh
+rm -f /oem/.debug
+rm -f /oem/overlay/upper/etc/hooks/klipper.d/10-kalico-tree.sh
+reboot
+```
+
+After the reboot, verify that the rollout actually came from the image:
+
+```sh
+cat /oem/apps/kalico/.image-stand          # marker written by S49ykalico
+ls -la /etc/hooks/klipper.d/               # must resolve to the squashfs version
+curl -s localhost:7125/printer/info        # "klipper_path": "/oem/apps/kalico"
+```
+
+Dropping `/oem/.debug` also restores the appliance's self-healing: a broken `/etc`
+no longer survives a reboot. Note that the WLAN credentials live in the overlay too —
+that is what overlay `09-wlan-restore` is for.
+
