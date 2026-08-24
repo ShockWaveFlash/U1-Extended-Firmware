@@ -1,10 +1,16 @@
 settings:
   motor_upgrade:
-    label: Motor Upgrade (XY)
+    label: "XY-Motorumbau"
     items:
       xy_geometry:
-        label: XY Motor Kit
-        description: Stepper geometry for the XY motor/pulley hardware. Only change this AFTER the matching hardware is physically installed.
+        label: "XY-Motorsatz"
+        description: >-
+          Sagt Klipper, welche Motoren und Riemenscheiben tatsächlich verbaut sind.
+          Daraus rechnet die Steuerung um, wieviel Motordrehung einem Millimeter
+          Kopfbewegung entspricht. <br>⚠⚠ Erst umstellen, NACHDEM die Teile eingebaut
+          sind. Passt die Angabe nicht zur Wirklichkeit, fährt der Drucker jede Strecke
+          falsch — bei den 0,9°-Motoren mit Werksscheiben genau die halbe Länge. Klipper
+          startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -16,8 +22,10 @@ settings:
             fi
         options:
           stock:
-            label: "Stock (1.8\u00b0, GT2 20T)"
-            confirm: "Revert to stock motor geometry (1.8\u00b0 motors, GT2 20T pulleys)? Only do this if the stock hardware is installed. Klipper will restart."
+            label: "Werkszustand (1,8°, GT2 20 Zähne)"
+            confirm: >-
+              Zurück auf die Werksangaben (1,8°-Motoren, GT2-Scheiben mit 20 Zähnen)?
+              Nur wählen, wenn die Werksteile eingebaut sind. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -26,8 +34,14 @@ settings:
                 echo "Stock XY geometry restored. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_26t:
-            label: "LDO-2504 0.9\u00b0 + 26T 1.5GT"
-            confirm: "Switch to LDO-42STH48-2504MAC(F) 0.9\u00b0 motors with Powge 26T 1.5GT pulleys (rotation_distance 39, full_steps 400)? WARNING: The hardware MUST already be installed \u2014 with stock motors this halves all XY movement. After switching: verify motor direction with STEPPER_BUZZ, re-run StallGuard homing calibration, and re-tune Input Shaper. Klipper will restart."
+            label: "LDO-2504 0,9° + 26 Zähne 1.5GT"
+            confirm: >-
+              Auf LDO-42STH48-2504MAC(F) mit 0,9° und Powge-Scheiben (26 Zähne, 1.5GT)
+              umstellen? Rechnerisch: 39 mm Vorschub je Umdrehung, 400 Vollschritte. ⚠⚠
+              Die Teile MÜSSEN eingebaut sein — mit Werksmotoren halbiert diese
+              Einstellung jede XY-Bewegung. Danach: Drehrichtung mit STEPPER_BUZZ
+              prüfen, die Referenzfahrt-Empfindlichkeit neu einstellen und den
+              Schwingungsausgleich neu messen. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -38,8 +52,13 @@ settings:
                 echo "LDO-2504 + 26T 1.5GT geometry active. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_gt2:
-            label: "LDO-2504 0.9\u00b0 + stock GT2 20T"
-            confirm: "Switch to LDO-42STH48-2504MAC(F) 0.9\u00b0 motors keeping the stock GT2 20T pulleys (rotation_distance 40, full_steps 400)? WARNING: The motors MUST already be installed. After switching: verify direction with STEPPER_BUZZ, re-run StallGuard homing calibration, and re-tune Input Shaper. Klipper will restart."
+            label: "LDO-2504 0,9° + Werksscheiben GT2 20 Zähne"
+            confirm: >-
+              Auf LDO-42STH48-2504MAC(F) mit 0,9° umstellen, aber die Werksscheiben
+              (GT2, 20 Zähne) behalten? Rechnerisch: 40 mm Vorschub je Umdrehung, 400
+              Vollschritte. ⚠⚠ Die Motoren MÜSSEN eingebaut sein. Danach: Drehrichtung
+              mit STEPPER_BUZZ prüfen, Referenzfahrt-Empfindlichkeit neu einstellen,
+              Schwingungsausgleich neu messen. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -52,8 +71,16 @@ settings:
         default: stock
 
       xy_run_current:
-        label: XY Run Current
-        description: TMC2240 run_current for stepper_x/stepper_y. Stock is 1.2A. Values above 1.2A need additional TMC driver cooling; 1.77A is the LDO-2504 RMS ceiling. Selecting any value here replaces the "TMC Reduced Current" tweak.
+        label: "XY-Motorstrom"
+        description: >-
+          Fahrstrom der X- und Y-Motoren, ab Werk 1,2 A. <br>Mehr Strom heißt mehr
+          Drehmoment und damit weniger verlorene Schritte bei hohem Tempo — aber auch
+          mehr Wärme in Motor UND Treiberbaustein. Oberhalb von 1,2 A braucht der
+          Treiber zusätzliche Kühlung; 1,77 A ist die Dauergrenze der LDO-2504-Motoren.
+          <br>⚠ Der Strom beeinflusst auch die Referenzfahrt: Sie erkennt den Anschlag
+          am einbrechenden Drehmoment, und diese Empfindlichkeit verschiebt sich mit dem
+          Strom. <br>Eine Wahl hier ersetzt die Einstellung „Verringerter TMC-Strom“.
+          Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -73,7 +100,7 @@ settings:
             esac
         options:
           default:
-            label: Stock (1.2A)
+            label: "Werkseinstellung (1,2 A)"
             cmd:
               - bash
               - -xc
@@ -82,8 +109,12 @@ settings:
                 echo "XY run current back to firmware default (1.2A). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           c10:
-            label: 1.0A
-            confirm: "Set XY run current to 1.0A? Reduced current lowers heat and noise but may skip steps under load. This replaces the TMC Reduced Current tweak if it was enabled. Klipper will restart."
+            label: "1,0 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,0 A setzen? Weniger Strom heißt weniger Wärme und
+              Geräusch, unter Last können aber Schritte verlorengehen. Ersetzt die
+              Einstellung „Verringerter TMC-Strom“, falls sie aktiv war. Klipper startet
+              neu.
             cmd:
               - bash
               - -xc
@@ -91,8 +122,10 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.0 &&
                 /etc/init.d/S60klipper restart
           c11:
-            label: 1.1A
-            confirm: "Set XY run current to 1.1A? This replaces the TMC Reduced Current tweak if it was enabled. Klipper will restart."
+            label: "1,1 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,1 A setzen? Ersetzt die Einstellung „Verringerter
+              TMC-Strom“, falls sie aktiv war. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -100,8 +133,10 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.1 &&
                 /etc/init.d/S60klipper restart
           c12:
-            label: 1.2A (pinned)
-            confirm: "Pin XY run current to 1.2A (same as stock, but explicit)? Klipper will restart."
+            label: "1,2 A (festgeschrieben)"
+            confirm: >-
+              XY-Fahrstrom auf 1,2 A festschreiben — derselbe Wert wie ab Werk, aber
+              ausdrücklich gesetzt? Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -109,8 +144,11 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.2 &&
                 /etc/init.d/S60klipper restart
           c13:
-            label: 1.3A
-            confirm: "Set XY run current to 1.3A? WARNING: Above stock. Requires additional TMC driver cooling. Monitor driver temperatures (temperature_driver sensors) and motor temperatures during first prints. Klipper will restart."
+            label: "1,3 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,3 A setzen? ⚠ Über Werksniveau. Der Treiber braucht
+              zusätzliche Kühlung. Bei den ersten Drucken Treiber- und Motortemperaturen
+              im Blick behalten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -118,8 +156,11 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.3 &&
                 /etc/init.d/S60klipper restart
           c14:
-            label: 1.4A
-            confirm: "Set XY run current to 1.4A? WARNING: Well above stock. Requires additional TMC driver cooling. Monitor driver and motor temperatures closely. Klipper will restart."
+            label: "1,4 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,4 A setzen? ⚠ Deutlich über Werksniveau. Der Treiber
+              braucht zusätzliche Kühlung. Treiber- und Motortemperaturen genau
+              beobachten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -127,8 +168,11 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.4 &&
                 /etc/init.d/S60klipper restart
           c15:
-            label: 1.5A
-            confirm: "Set XY run current to 1.5A? WARNING: High current. Only with upgraded motors (LDO-2504 or similar) AND additional TMC driver cooling. Monitor temperatures closely. Klipper will restart."
+            label: "1,5 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,5 A setzen? ⚠ Hoher Strom. Nur mit stärkeren Motoren
+              (LDO-2504 oder vergleichbar) UND zusätzlicher Treiberkühlung. Temperaturen
+              genau beobachten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -136,8 +180,12 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.5 &&
                 /etc/init.d/S60klipper restart
           c16:
-            label: 1.6A
-            confirm: "Set XY run current to 1.6A? WARNING: Very high current, near the LDO-2504 RMS ceiling (1.77A). Only with upgraded motors AND effective TMC driver cooling. Expect drivers to run hot; watch temperature_driver readings. Klipper will restart."
+            label: "1,6 A"
+            confirm: >-
+              XY-Fahrstrom auf 1,6 A setzen? ⚠ Sehr hoher Strom, nahe der Dauergrenze
+              der LDO-2504 von 1,77 A. Nur mit stärkeren Motoren UND wirksamer
+              Treiberkühlung. Die Treiber werden heiß — Temperaturanzeige im Auge
+              behalten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -145,11 +193,14 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-current.sh 1.6 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom\u2026"
-            confirm: "Set a custom XY run current (0.50\u20131.77A RMS)? Values above 1.2A require additional TMC driver cooling. 1.77A is the absolute LDO-2504 RMS limit. Klipper will restart."
+            label: "Eigener Wert…"
+            confirm: >-
+              Eigenen XY-Fahrstrom setzen (0,50–1,77 A)? Über 1,2 A braucht der Treiber
+              zusätzliche Kühlung. 1,77 A ist die absolute Dauergrenze der LDO-2504.
+              Klipper startet neu.
             inputs:
               - name: MOTOR_CURRENT
-                label: "Run current in A (0.50\u20131.77)"
+                label: "Fahrstrom in A (0,50–1,77)"
                 placeholder: "1.25"
                 regex: '^(0\.[5-9][0-9]?|1\.[0-6][0-9]?|1\.7[0-7]?)$'
             cmd:
@@ -161,8 +212,15 @@ settings:
         default: default
 
       xy_autotune:
-        label: TMC AutoTune (Motor DB)
-        description: Runtime driver tuning via the klipper_tmc_autotune plugin with real motor constants from its motor database. Replaces the static "TMC AutoTune" tweak (which is tuned for stock motors).
+        label: "Treiber-Selbstabstimmung (Motordatenbank)"
+        description: >-
+          Stimmt die Treibereinstellungen im laufenden Betrieb auf den tatsächlich
+          verbauten Motor ab. Die Erweiterung klipper_tmc_autotune bringt eine Datenbank
+          echter Motorkennwerte mit — Induktivität, Widerstand, Haltemoment — und leitet
+          daraus ab, wann der Treiber leise und wann kräftig arbeiten soll. <br>Das ist
+          genauer als feste Werte, weil es sich an Drehzahl und Last anpasst.
+          <br>Ersetzt die feste Einstellung „TMC AutoTune“, die auf die Werksmotoren
+          abgestimmt ist. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -178,7 +236,7 @@ settings:
             esac
         options:
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc
@@ -187,8 +245,12 @@ settings:
                 echo "AutoTune (motor DB) disabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_auto:
-            label: LDO-2504 (auto = performance for XY)
-            confirm: "Enable klipper_tmc_autotune for the LDO-42STH48-2504MAC(F) with tuning_goal auto? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Monitor motor temperatures during first use. Klipper will restart."
+            label: "LDO-2504 (automatisch, für XY = kräftig)"
+            confirm: >-
+              Selbstabstimmung für die LDO-42STH48-2504MAC(F) einschalten, Ziel
+              „automatisch“? Nur mit tatsächlich eingebauten LDO-2504-Motoren wählen.
+              Schaltet die feste Einstellung „TMC AutoTune“ ab. Beim ersten Einsatz die
+              Motortemperaturen beobachten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -203,8 +265,12 @@ settings:
                 echo "AutoTune for LDO-2504 (auto) enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_perf:
-            label: LDO-2504 (performance)
-            confirm: "Enable klipper_tmc_autotune for the LDO-42STH48-2504MAC(F) with tuning_goal performance (SpreadCycle at all speeds \u2014 more torque, more noise/heat)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            label: "LDO-2504 (kräftig)"
+            confirm: >-
+              Selbstabstimmung mit Ziel „kräftig“ einschalten? Der Treiber arbeitet dann
+              bei allen Geschwindigkeiten im harten Modus: mehr Drehmoment, dafür lauter
+              und wärmer. Nur mit eingebauten LDO-2504-Motoren. Schaltet die feste
+              Einstellung „TMC AutoTune“ ab. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -219,8 +285,15 @@ settings:
                 echo "AutoTune for LDO-2504 (performance) enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_silent:
-            label: LDO-2504 (silent)
-            confirm: "Enable klipper_tmc_autotune with tuning_goal silent (StealthChop at all speeds \u2014 quietest, potentially fewer VFA at low/mid speeds, but reduced torque at high speed; expect skipped steps at stock top speeds, combine with a speed limit)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            label: "LDO-2504 (leise)"
+            confirm: >-
+              Selbstabstimmung mit Ziel „leise“ einschalten? Der Treiber bleibt bei
+              allen Geschwindigkeiten im Flüstermodus: am leisesten und bei niedrigem
+              bis mittlerem Tempo oft mit weniger feinen Oberflächenmustern, aber mit
+              weniger Drehmoment bei hohem Tempo. ⚠ Bei Werks-Höchstgeschwindigkeit sind
+              verlorene Schritte zu erwarten — sinnvoll nur zusammen mit einer
+              Geschwindigkeitsbegrenzung. Nur mit eingebauten LDO-2504-Motoren. Klipper
+              startet neu.
             cmd:
               - bash
               - -xc
@@ -235,8 +308,13 @@ settings:
                 echo "AutoTune for LDO-2504 (silent) enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_autoswitch:
-            label: LDO-2504 (autoswitch, experimental)
-            confirm: "Enable klipper_tmc_autotune with tuning_goal autoswitch (EXPERIMENTAL: StealthChop at low speed, switches to SpreadCycle when needed \u2014 mode transitions can cause artifacts mid-print)? Only use with the LDO-2504 motors installed. This disables the static TMC AutoTune tweak if it was enabled. Klipper will restart."
+            label: "LDO-2504 (Moduswechsel, erprobend)"
+            confirm: >-
+              Selbstabstimmung mit Ziel „Moduswechsel“ einschalten? ⚠ Erprobend: leise
+              bei niedrigem Tempo, Wechsel in den kräftigen Modus, sobald mehr
+              Drehmoment nötig wird. Der Wechsel selbst kann mitten im Druck sichtbare
+              Spuren hinterlassen. Nur mit eingebauten LDO-2504-Motoren. Klipper startet
+              neu.
             cmd:
               - bash
               - -xc
@@ -253,8 +331,16 @@ settings:
         default: disabled
 
       xy_stallguard:
-        label: XY StallGuard Threshold
-        description: Pin the sensorless-homing threshold after calibrating for the new motors. SG4_THRS (0-255, higher = less sensitive) or legacy SGT (-64..63, higher = less sensitive). Leave at Stock until calibrated.
+        label: "Empfindlichkeit der XY-Referenzfahrt"
+        description: >-
+          Legt fest, ab welchem Drehmomenteinbruch der Treiber den Anschlag meldet. Der
+          U1 referenziert ohne Endschalter: Der Kopf fährt gegen den Rahmen, das
+          Drehmoment bricht ein, und der Treiber meldet „angekommen“. <br>Wie stark
+          dieser Einbruch sein muss, hängt von Motor, Strom und Geschwindigkeit ab —
+          nach einem Motorwechsel stimmt der Werkswert nicht mehr. <br>Zwei Zahlenwelten
+          je nach Treiber: SG4_THRS von 0 bis 255 und das ältere SGT von −64 bis 63; bei
+          beiden gilt: höher = unempfindlicher. <br>⚠ Auf Werkseinstellung lassen, bis
+          der richtige Wert ermittelt ist. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -266,7 +352,7 @@ settings:
             fi
         options:
           default:
-            label: Stock
+            label: "Werkseinstellung"
             cmd:
               - bash
               - -xc
@@ -275,15 +361,20 @@ settings:
                 echo "StallGuard override removed (stock thresholds). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           sg4:
-            label: "SG4_THRS custom\u2026"
-            confirm: "Override driver_SG4_THRS for stepper_x/y? WARNING: A wrong threshold makes homing crash into the frame (too high) or trigger mid-travel (too low). Calibrate empirically first and be ready to power off during the first homing attempt. Klipper will restart."
+            label: "SG4_THRS eigener Wert…"
+            confirm: >-
+              SG4_THRS für X und Y selbst setzen? ⚠⚠ Ein falscher Wert lässt den Kopf in
+              den Rahmen fahren (zu unempfindlich) oder mitten im Weg stehenbleiben (zu
+              empfindlich). Erst durch Ausprobieren ermitteln — und bei der ersten
+              Referenzfahrt danebenstehen, um notfalls auszuschalten. Klipper startet
+              neu.
             inputs:
               - name: SG_X
-                label: "SG4_THRS X (0-255)"
+                label: "SG4_THRS X (0–255)"
                 placeholder: "70"
                 regex: '^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$'
               - name: SG_Y
-                label: "SG4_THRS Y (0-255)"
+                label: "SG4_THRS Y (0–255)"
                 placeholder: "70"
                 regex: '^([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$'
             cmd:
@@ -293,15 +384,19 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-stallguard.sh sg4 "${SG_X}" "${SG_Y}" &&
                 /etc/init.d/S60klipper restart
           sgt:
-            label: "SGT custom\u2026"
-            confirm: "Override driver_SGT for stepper_x/y? WARNING: A wrong threshold makes homing crash into the frame or trigger mid-travel. Calibrate empirically first and be ready to power off during the first homing attempt. Klipper will restart."
+            label: "SGT eigener Wert…"
+            confirm: >-
+              SGT für X und Y selbst setzen? ⚠⚠ Ein falscher Wert lässt den Kopf in den
+              Rahmen fahren oder mitten im Weg stehenbleiben. Erst durch Ausprobieren
+              ermitteln — und bei der ersten Referenzfahrt danebenstehen, um notfalls
+              auszuschalten. Klipper startet neu.
             inputs:
               - name: SG_X
-                label: "SGT X (-64..63)"
+                label: "SGT X (−64 bis 63)"
                 placeholder: "1"
                 regex: '^(-(6[0-4]|[1-5][0-9]|[1-9])|6[0-3]|[1-5][0-9]|[0-9])$'
               - name: SG_Y
-                label: "SGT Y (-64..63)"
+                label: "SGT Y (−64 bis 63)"
                 placeholder: "1"
                 regex: '^(-(6[0-4]|[1-5][0-9]|[1-9])|6[0-3]|[1-5][0-9]|[0-9])$'
             cmd:
@@ -313,8 +408,15 @@ settings:
         default: default
 
       xy_speed_limit:
-        label: XY Speed Limit
-        description: Cap max_velocity. First intervention if the 0.9 deg motors skip steps at top speed, before raising current. Stock = no override.
+        label: "XY-Geschwindigkeitsgrenze"
+        description: >-
+          Begrenzt die Höchstgeschwindigkeit des Druckkopfs. <br>Das ist der erste
+          Griff, wenn die 0,9°-Motoren bei Spitzentempo Schritte verlieren — und der
+          bessere, bevor man den Strom anhebt: 0,9°-Motoren liefern bei hoher Drehzahl
+          weniger Drehmoment als 1,8°-Motoren, weil sie doppelt so oft schalten müssen.
+          Mehr Strom bekämpft dann nur das Symptom und heizt Treiber und Motor auf.
+          <br>„Werkseinstellung“ heißt: keine eigene Grenze, es gilt der Wert aus der
+          printer.cfg. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -330,7 +432,7 @@ settings:
             esac
         options:
           default:
-            label: Stock
+            label: "Werkseinstellung"
             cmd:
               - bash
               - -xc
@@ -339,8 +441,8 @@ settings:
                 echo "Speed limit removed (stock max_velocity). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           v450:
-            label: 450 mm/s
-            confirm: "Cap max_velocity at 450mm/s? Klipper will restart."
+            label: "450 mm/s"
+            confirm: "Höchstgeschwindigkeit auf 450 mm/s begrenzen? Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -348,8 +450,8 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 450 &&
                 /etc/init.d/S60klipper restart
           v400:
-            label: 400 mm/s
-            confirm: "Cap max_velocity at 400mm/s? Klipper will restart."
+            label: "400 mm/s"
+            confirm: "Höchstgeschwindigkeit auf 400 mm/s begrenzen? Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -357,8 +459,8 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 400 &&
                 /etc/init.d/S60klipper restart
           v350:
-            label: 350 mm/s
-            confirm: "Cap max_velocity at 350mm/s? Klipper will restart."
+            label: "350 mm/s"
+            confirm: "Höchstgeschwindigkeit auf 350 mm/s begrenzen? Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -366,11 +468,12 @@ settings:
                 sh /usr/local/share/firmware-config/motor-upgrade/set-speed-limit.sh 350 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom\u2026"
-            confirm: "Set a custom max_velocity (100-1000 mm/s)? Klipper will restart."
+            label: "Eigener Wert…"
+            confirm: >-
+              Eigene Höchstgeschwindigkeit setzen (100–1000 mm/s)? Klipper startet neu.
             inputs:
               - name: MAX_VEL
-                label: "max_velocity in mm/s (100-1000)"
+                label: "Höchstgeschwindigkeit in mm/s (100–1000)"
                 placeholder: "450"
                 regex: '^([1-9][0-9][0-9]|1000)$'
             cmd:
@@ -382,15 +485,22 @@ settings:
         default: default
 
       xy_macros:
-        label: Commissioning Macros
-        description: Adds XY_DRIVER_TEMPS (report TMC2240 temps + run current) and XY_STRESS_TEST (motion stress test with temp logging) gcode macros.
+        label: "Makros für die Inbetriebnahme"
+        description: >-
+          Stellt zwei Befehle für die Inbetriebnahme nach einem Motorumbau bereit.
+          <br>XY_DRIVER_TEMPS meldet die Temperaturen der Treiberbausteine und den
+          tatsächlich eingestellten Fahrstrom — damit lässt sich prüfen, ob ein
+          angehobener Strom die Treiber überhitzt. <br>XY_STRESS_TEST fährt den Kopf
+          über längere Zeit hart hin und her und protokolliert dabei die Temperaturen.
+          So zeigt sich unter Last, ob Strom und Kühlung zusammenpassen, bevor es ein
+          echter Druck herausfindet. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/klipper/motor_macros.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -401,7 +511,7 @@ settings:
                 echo "Commissioning macros installed. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

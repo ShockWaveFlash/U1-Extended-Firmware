@@ -1,10 +1,19 @@
 settings:
   bed_chamber:
-    label: Bed & Chamber
+    label: "Bett und Innenraum"
     items:
       bed_maxtemp:
-        label: Bed Max Temp
-        description: Raises the heater_bed max_temp limit (stock 110C). Only enables higher setpoints in the slicer/UI - it does not heat anything by itself. Use for high-temp materials (ABS/ASA/PC) that benefit from a hotter bed. Watch adhesive/PEI limits and cable/insulation ratings above 110C.
+        label: "Höchsttemperatur des Betts"
+        description: >-
+          Hebt die zulässige Höchsttemperatur des Heizbetts an, ab Werk 110 °C. <br>Der
+          Schalter heizt nichts — er erlaubt lediglich, im Slicer oder in der Oberfläche
+          höhere Werte einzustellen. Gebraucht wird das für Hochtemperatur-Kunststoffe
+          wie ABS, ASA oder PC, die von einem heißeren Bett profitieren. <br>⚠ Oberhalb
+          von 110 °C wird es für die Umgebung eng: Die Klebeschicht unter der
+          Druckplatte, die PEI-Beschichtung und die Isolierung der Bettkabel sind für
+          einen bestimmten Bereich ausgelegt. Vor dem Anheben nachsehen, was die
+          verwendete Platte verträgt. <br>⚠ Der Druckerraum hat kein Fenster —
+          ABS/ASA/PC nur bei guter Lüftung. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -19,7 +28,7 @@ settings:
             esac
         options:
           default:
-            label: Stock (110C)
+            label: "Werkseinstellung (110 °C)"
             cmd:
               - bash
               - -xc
@@ -28,8 +37,11 @@ settings:
                 echo "Bed max_temp back to stock (110C). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           p115:
-            label: 115C
-            confirm: "Raise heater_bed max_temp to 115C? Only lift this if your bed surface (PEI/adhesive) and wiring are rated for it. Klipper will restart."
+            label: "115 °C"
+            confirm: >-
+              Höchsttemperatur des Betts auf 115 °C anheben? Nur anheben, wenn
+              Druckplatte, Klebeschicht und Verkabelung dafür ausgelegt sind. Klipper
+              startet neu.
             cmd:
               - bash
               - -xc
@@ -37,8 +49,13 @@ settings:
                 sh /usr/local/share/firmware-config/bed-chamber/set-bed-maxtemp.sh 115 &&
                 /etc/init.d/S60klipper restart
           p120:
-            label: 120C
-            confirm: "Raise heater_bed max_temp to 120C (mod maximum)? WARNING: This is above the stock 110C ceiling - confirm your bed surface, adhesive and cabling tolerate 120C. Sustained high bed temps stress the heater and PSU. Klipper will restart."
+            label: "120 °C"
+            confirm: >-
+              Höchsttemperatur des Betts auf 120 °C anheben, den Höchstwert dieser
+              Erweiterung? ⚠ Das liegt deutlich über der Werksgrenze von 110 °C — vorher
+              sicherstellen, dass Druckplatte, Klebeschicht und Kabel das aushalten.
+              Dauerhaft hohe Betttemperaturen belasten Heizung und Netzteil. Klipper
+              startet neu.
             cmd:
               - bash
               - -xc
@@ -46,11 +63,14 @@ settings:
                 sh /usr/local/share/firmware-config/bed-chamber/set-bed-maxtemp.sh 120 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom…"
-            confirm: "Set a custom heater_bed max_temp (111-120C)? WARNING: Above stock 110C - only raise this within your bed surface, adhesive and wiring ratings. Klipper will restart."
+            label: "Eigener Wert…"
+            confirm: >-
+              Eigene Höchsttemperatur fürs Bett setzen (111–120 °C)? ⚠ Oberhalb der
+              Werksgrenze von 110 °C — nur so weit anheben, wie Druckplatte,
+              Klebeschicht und Verkabelung es zulassen. Klipper startet neu.
             inputs:
               - name: BED_MAX
-                label: "max_temp in C (111-120)"
+                label: "Höchsttemperatur in °C (111–120)"
                 placeholder: "115"
                 regex: '^(11[1-9]|120)$'
             cmd:
@@ -62,15 +82,26 @@ settings:
         default: default
 
       heat_soak_macro:
-        label: HEAT_SOAK Macro
-        description: Adds a HEAT_SOAK gcode macro. Heats the bed, then either soaks for a fixed time (MINUTES) or waits until the enclosure reaches a target using the stock cavity sensor (CHAMBER). Blocking - meant for slicer start gcode or manual pre-heating.
+        label: "Aufwärm-Makro (HEAT_SOAK)"
+        description: >-
+          Stellt den Befehl HEAT_SOAK bereit. Er heizt das Bett auf und hält es dann
+          entweder eine feste Zeit (Angabe MINUTES) oder wartet, bis der Innenraum eine
+          Zieltemperatur erreicht hat (Angabe CHAMBER), gemessen mit dem eingebauten
+          Innenraumfühler. <br>Wozu das gut ist: Ein Druckerrahmen aus Aluminium dehnt
+          sich beim Aufwärmen aus. Startet man sofort, verzieht sich die Geometrie
+          während der ersten Schichten — die Düse steht nach zwanzig Minuten woanders
+          als beim Nivellieren. Das Durchwärmen vorweg nimmt dem Rahmen diese Bewegung.
+          Bei ABS und ASA kommt hinzu, dass ein warmer Innenraum das Ablösen an den
+          Ecken verhindert. <br>Der Befehl blockiert, bis er fertig ist — gedacht für
+          den Start-G-Code des Druckprofils oder zum Vorheizen von Hand. Klipper startet
+          beim Umschalten neu.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/klipper/heat_soak.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -81,7 +112,7 @@ settings:
                 echo "HEAT_SOAK macro installed. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

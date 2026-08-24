@@ -1,17 +1,25 @@
 settings:
   input_shaper:
-    label: Input Shaper
+    label: "Schwingungsausgleich"
     items:
       is_values:
-        label: Input Shaper (X/Y)
-        description: Persists an [input_shaper] override (type + frequency per axis) from a resonance measurement. Survives firmware updates (last-wins in extended/klipper). Re-run a measurement after the XY motor upgrade - the resonance frequencies shift with the changed motors/mass.
+        label: "Schwingungsausgleich (X/Y)"
+        description: >-
+          Hält die Werte einer Resonanzmessung dauerhaft fest — Ausgleichsart und
+          Frequenz je Achse. Der Schwingungsausgleich verformt jede Bewegung so, dass
+          der Rahmen möglichst wenig nachschwingt; das ist es, was Geisterbilder hinter
+          Kanten verhindert. <br>Die Werte werden als eigene Datei abgelegt und
+          überleben deshalb auch ein Firmware-Update, anders als ein Eintrag direkt in
+          der printer.cfg. <br>⚠ Nach dem XY-Motorumbau neu messen: mit anderen Motoren
+          und anderer bewegter Masse verschieben sich die Resonanzfrequenzen. Klipper
+          startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/klipper/input_shaper.cfg && echo "custom" || echo "default"
         options:
           default:
-            label: Stock (off)
+            label: "Aus (Werkszustand)"
             cmd:
               - bash
               - -xc
@@ -20,23 +28,25 @@ settings:
                 echo "Input shaper override removed (back to stock). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom…"
-            confirm: "Apply these input shaper values? Enter the type and frequency your resonance measurement recommended for each axis. Klipper will restart."
+            label: "Eigene Werte…"
+            confirm: >-
+              Diese Werte für den Schwingungsausgleich übernehmen? Einzutragen ist, was
+              die Resonanzmessung je Achse empfohlen hat. Klipper startet neu.
             inputs:
               - name: SHAPER_X
-                label: "Shaper type X (zv/mzv/ei/2hump_ei/3hump_ei)"
+                label: "Ausgleichsart X (zv/mzv/ei/2hump_ei/3hump_ei)"
                 placeholder: "mzv"
                 regex: '^(zv|mzv|ei|2hump_ei|3hump_ei)$'
               - name: FREQ_X
-                label: "shaper_freq_x in Hz (20-150)"
+                label: "Frequenz X in Hz (20-150)"
                 placeholder: "52.4"
                 regex: '^(2[0-9]|[3-9][0-9]|1[0-4][0-9]|150)(\.[0-9])?$'
               - name: SHAPER_Y
-                label: "Shaper type Y (zv/mzv/ei/2hump_ei/3hump_ei)"
+                label: "Ausgleichsart Y (zv/mzv/ei/2hump_ei/3hump_ei)"
                 placeholder: "mzv"
                 regex: '^(zv|mzv|ei|2hump_ei|3hump_ei)$'
               - name: FREQ_Y
-                label: "shaper_freq_y in Hz (20-150)"
+                label: "Frequenz Y in Hz (20-150)"
                 placeholder: "41.8"
                 regex: '^(2[0-9]|[3-9][0-9]|1[0-4][0-9]|150)(\.[0-9])?$'
             cmd:
@@ -48,15 +58,22 @@ settings:
         default: default
 
       is_calibrate:
-        label: Calibration Macro
-        description: Adds CALIBRATE_INPUT_SHAPER - runs Klipper's resonance measurement (SHAPER_CALIBRATE) for X and Y using the onboard accelerometer and prints the recommended shaper type + frequency to enter above. Requires a working [resonance_tester]/accelerometer on this machine.
+        label: "Messmakro"
+        description: >-
+          Stellt den Befehl CALIBRATE_INPUT_SHAPER bereit. Er fährt Klippers
+          Resonanzmessung für X und Y: der Kopf rüttelt in aufsteigenden Frequenzen,
+          während der eingebaute Beschleunigungssensor mitmisst. Am Ende nennt Klipper
+          die empfohlene Ausgleichsart und Frequenz je Achse — genau die Werte, die oben
+          einzutragen sind. <br>Die Messung ist laut und dauert einige Minuten. <br>⚠
+          Setzt einen funktionierenden Beschleunigungssensor voraus. Klipper startet
+          beim Umschalten neu.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/klipper/input_shaper_calibrate.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -67,7 +84,7 @@ settings:
                 echo "CALIBRATE_INPUT_SHAPER macro installed. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

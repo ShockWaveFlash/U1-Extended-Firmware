@@ -1,10 +1,18 @@
 settings:
   toolhead_fans:
-    label: Toolhead Fans
+    label: "Düsenlüfter"
     items:
       nozzle_fan_speed:
-        label: Nozzle Fan Speed (T0-T3)
-        description: Speed of the temperature-triggered nozzle/heatbreak fans per toolhead. Stock is 1.0. Lower is quieter, but values below ~0.6 increase heat-creep and clog risk. This is NOT the part cooling fan.
+        label: "Drehzahl der Düsenlüfter (T0–T3)"
+        description: >-
+          Drehzahl der temperaturgesteuerten Düsenlüfter, je Werkzeug einer. Diese
+          Lüfter kühlen die Wärmebremse zwischen Heizblock und Kühlkörper — die Stelle,
+          an der das Filament fest bleiben MUSS. Wird dort zu wenig gekühlt, wandert die
+          Wärme nach oben, das Filament wird schon im Zuführrohr weich und verstopft die
+          Düse (Heat Creep). <br>Werkseinstellung ist 1.0, also volle Drehzahl. Weniger
+          ist leiser, unter etwa 0.6 steigt die Verstopfungsgefahr aber deutlich. <br>⚠
+          Das ist NICHT der Bauteillüfter, der das gedruckte Material anbläst — dessen
+          Drehzahl kommt aus dem Druckprofil. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -18,7 +26,7 @@ settings:
             fi
         options:
           default:
-            label: Stock (1.0)
+            label: "Werkseinstellung (1.0)"
             cmd:
               - bash
               - -xc
@@ -27,8 +35,11 @@ settings:
                 echo "Nozzle fan speeds back to stock (1.0). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           reduced:
-            label: Reduced (0.8, all)
-            confirm: "Set all four nozzle fans to 0.8? Quieter with a modest cooling reduction. Watch for heat creep (soft clicks, clogs) on long high-temp prints. Klipper will restart."
+            label: "Verringert (0.8, alle)"
+            confirm: >-
+              Alle vier Düsenlüfter auf 0.8 setzen? Leiser bei mäßig verringerter
+              Kühlung. Bei langen, heißen Drucken auf Anzeichen von Heat Creep achten:
+              leises Klicken des Antriebs, stockender Fluss. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -36,8 +47,12 @@ settings:
                 sh /usr/local/share/firmware-config/toolhead-fans/set-nozzle-fans.sh 0.8 0.8 0.8 0.8 &&
                 /etc/init.d/S60klipper restart
           quiet:
-            label: Quiet (0.6, all)
-            confirm: "Set all four nozzle fans to 0.6 (community-proven quiet value)? WARNING: Noticeably less heatbreak cooling. Monitor for heat creep, especially with PLA at long prints or high chamber temperatures. Klipper will restart."
+            label: "Leise (0.6, alle)"
+            confirm: >-
+              Alle vier Düsenlüfter auf 0.6 setzen? Dieser Wert hat sich in der
+              Nutzergemeinde als leise Einstellung bewährt. ⚠ Die Wärmebremse wird
+              spürbar weniger gekühlt. Besonders bei PLA, langen Drucken und warmem
+              Innenraum auf Verstopfungen achten. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -45,23 +60,27 @@ settings:
                 sh /usr/local/share/firmware-config/toolhead-fans/set-nozzle-fans.sh 0.6 0.6 0.6 0.6 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom per tool\u2026"
-            confirm: "Set individual nozzle fan speeds per toolhead (0.30-1.0)? WARNING: Values below 0.6 significantly increase heat-creep and clog risk \u2014 only go lower for tools you rarely use or after verifying temperatures. Klipper will restart."
+            label: "Je Werkzeug einzeln…"
+            confirm: >-
+              Für jedes Werkzeug eine eigene Lüfterdrehzahl setzen (0.30–1.0)? ⚠ Unter
+              0.6 steigt die Verstopfungsgefahr deutlich — so weit nur heruntergehen bei
+              Werkzeugen, die selten laufen, oder nachdem die Temperaturen nachgemessen
+              wurden. Klipper startet neu.
             inputs:
               - name: FAN_T0
-                label: "T0 fan_speed (0.30-1.0)"
+                label: "T0 Drehzahl (0.30–1.0)"
                 placeholder: "0.6"
                 regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
               - name: FAN_T1
-                label: "T1 fan_speed (0.30-1.0)"
+                label: "T1 Drehzahl (0.30–1.0)"
                 placeholder: "0.6"
                 regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
               - name: FAN_T2
-                label: "T2 fan_speed (0.30-1.0)"
+                label: "T2 Drehzahl (0.30–1.0)"
                 placeholder: "0.6"
                 regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
               - name: FAN_T3
-                label: "T3 fan_speed (0.30-1.0)"
+                label: "T3 Drehzahl (0.30–1.0)"
                 placeholder: "0.6"
                 regex: '^(0\.[3-9][0-9]?|1(\.00?)?)$'
             cmd:

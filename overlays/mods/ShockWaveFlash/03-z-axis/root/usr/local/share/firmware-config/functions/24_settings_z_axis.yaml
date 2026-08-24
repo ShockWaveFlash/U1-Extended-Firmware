@@ -1,10 +1,17 @@
 settings:
   z_axis:
-    label: Z Axis
+    label: "Z-Achse"
     items:
       z_motion:
-        label: Z Speed / Accel
-        description: Z motion limits (stock 30 mm/s, 500 mm/s2). Lower values reduce Z bumps and noise on layer changes at the cost of slightly slower Z moves.
+        label: "Z-Geschwindigkeit und -Beschleunigung"
+        description: >-
+          Grenzwerte für die Z-Bewegung, ab Werk 30 mm/s und 500 mm/s². <br>Niedrigere
+          Werte nehmen dem Z-Antrieb das Schlagen bei jedem Schichtwechsel und beim
+          Z-Hop. Der Hebel ist dabei die BESCHLEUNIGUNG, nicht die Geschwindigkeit: Das
+          hörbare Bumsen entsteht beim Anfahren, wo das volle Drehmoment gefragt ist.
+          <br>Der Preis sind geringfügig langsamere Z-Bewegungen — bei einem Bruchteil
+          einer Sekunde je Schicht fällt das kaum ins Gewicht. Klipper startet beim
+          Umschalten neu.
         get_cmd:
           - bash
           - -c
@@ -19,7 +26,7 @@ settings:
             fi
         options:
           default:
-            label: Stock (30 / 500)
+            label: "Werkseinstellung (30 / 500)"
             cmd:
               - bash
               - -xc
@@ -28,8 +35,11 @@ settings:
                 echo "Z motion limits back to stock. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           smooth:
-            label: Smooth (20 / 300)
-            confirm: "Limit Z to 20 mm/s and 300 mm/s2 (community-proven values against Z bumps and noise)? Layer changes and homing get slightly slower. Klipper will restart."
+            label: "Ruhig (20 / 300)"
+            confirm: >-
+              Z auf 20 mm/s und 300 mm/s² begrenzen? Diese Werte haben sich gegen das
+              Schlagen der Z-Achse bewährt. Schichtwechsel und Referenzfahrt werden
+              geringfügig langsamer. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -37,8 +47,10 @@ settings:
                 sh /usr/local/share/firmware-config/z-axis/set-z-motion.sh 20 300 &&
                 /etc/init.d/S60klipper restart
           extra_smooth:
-            label: Extra Smooth (15 / 200)
-            confirm: "Limit Z to 15 mm/s and 200 mm/s2? Quietest preset; Z moves and homing become noticeably slower. Klipper will restart."
+            label: "Sehr ruhig (15 / 200)"
+            confirm: >-
+              Z auf 15 mm/s und 200 mm/s² begrenzen? Die leiseste Vorgabe; Z-Bewegungen
+              und Referenzfahrt werden merklich langsamer. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -46,15 +58,17 @@ settings:
                 sh /usr/local/share/firmware-config/z-axis/set-z-motion.sh 15 200 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom\u2026"
-            confirm: "Set custom Z limits? Velocity 5-30 mm/s, accel 50-500 mm/s2 (stock maxima as upper bounds). Klipper will restart."
+            label: "Eigene Werte…"
+            confirm: >-
+              Eigene Z-Grenzwerte setzen? Geschwindigkeit 5–30 mm/s, Beschleunigung
+              50–500 mm/s²; die Werkswerte sind die Obergrenze. Klipper startet neu.
             inputs:
               - name: Z_VEL
-                label: "max_z_velocity in mm/s (5-30)"
+                label: "Höchstgeschwindigkeit Z in mm/s (5–30)"
                 placeholder: "20"
                 regex: '^([5-9]|[12][0-9]|30)$'
               - name: Z_ACC
-                label: "max_z_accel in mm/s2 (50-500)"
+                label: "Höchstbeschleunigung Z in mm/s² (50–500)"
                 placeholder: "300"
                 regex: '^([5-9][0-9]|[1-4][0-9][0-9]|500)$'
             cmd:
@@ -66,15 +80,25 @@ settings:
         default: default
 
       z_stealthchop:
-        label: Z StealthChop
-        description: Runs the Z TMC2209 in StealthChop at all speeds. Biggest single noise reduction for Z moves; stock uses louder SpreadCycle. Slightly less torque at speed.
+        label: "Z-Treiber im Flüstermodus"
+        description: >-
+          Betreibt den Z-Schrittmotortreiber bei allen Geschwindigkeiten im leisen
+          Betriebsmodus (StealthChop). <br>Der Unterschied liegt darin, WIE der Treiber
+          den Strom durch die Spulen schaltet: Der Werksmodus SpreadCycle regelt hart
+          und erzeugt dabei ein hörbares Sirren, der Flüstermodus arbeitet mit weichen
+          Übergängen und ist nahezu lautlos. <br>Das ist die wirkungsvollste
+          Einzelmaßnahme gegen Z-Geräusche. Der Preis: bei höherem Tempo etwas weniger
+          Drehmoment. <br>⚠ Die Z-Achse referenziert ohne Endschalter über die
+          Drehmomenterkennung des Treibers — und die verhält sich im Flüstermodus
+          anders. Nach dem Umschalten G28 Z prüfen und die ersten Drucke im Auge
+          behalten. Klipper startet beim Umschalten neu.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/klipper/z_stealthchop.cfg && echo "enabled" || echo "disabled"
         options:
           disabled:
-            label: Stock (SpreadCycle)
+            label: "Werkseinstellung (SpreadCycle)"
             cmd:
               - bash
               - -xc
@@ -83,8 +107,12 @@ settings:
                 echo "Z back to SpreadCycle. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           enabled:
-            label: StealthChop
-            confirm: "Enable StealthChop on the Z driver (quietest mode)? NOTE: Z homes sensorless via StallGuard; after enabling, verify Z homing works reliably (G28 Z) and watch the first few prints for lost Z steps under heavy bed load. Klipper will restart."
+            label: "Flüstermodus (StealthChop)"
+            confirm: >-
+              Den Z-Treiber in den Flüstermodus schalten? ⚠ Die Z-Referenzfahrt läuft
+              ohne Endschalter über die Drehmomenterkennung. Danach unbedingt G28 Z
+              prüfen und die ersten Drucke beobachten, ob unter Bettlast Schritte
+              verloren gehen. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -97,8 +125,15 @@ settings:
         default: disabled
 
       z_current:
-        label: Z Run Current
-        description: TMC2209 run_current for stepper_z (stock 0.85A). Lower is quieter and cooler, but the Z drive lifts the full bed - too little current risks lost steps and a sagging bed.
+        label: "Z-Motorstrom"
+        description: >-
+          Fahrstrom des Z-Motors, ab Werk 0,85 A. <br>Weniger Strom heißt leiser und
+          kühler. Aber: Der Z-Antrieb hebt das gesamte Druckbett mitsamt Werkstück. Ist
+          der Strom zu klein, verliert der Motor unter Last Schritte — das Bett sackt
+          langsam ab, und die Schichthöhe wandert über den Druck hinweg. <br>⚠ Auch die
+          Referenzfahrt hängt daran: Die Drehmomenterkennung reagiert je nach Strom
+          anders, nach einer Änderung also G28 Z prüfen. Klipper startet beim Umschalten
+          neu.
         get_cmd:
           - bash
           - -c
@@ -112,7 +147,7 @@ settings:
             esac
         options:
           default:
-            label: Stock (0.85A)
+            label: "Werkseinstellung (0,85 A)"
             cmd:
               - bash
               - -xc
@@ -121,8 +156,11 @@ settings:
                 echo "Z run current back to stock (0.85A). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           c07:
-            label: 0.7A
-            confirm: "Set Z run current to 0.7A? WARNING: The Z drive lifts the entire bed. Watch for lost Z steps (layer height drift, bed sag) especially with a loaded bed. Klipper will restart."
+            label: "0,7 A"
+            confirm: >-
+              Z-Fahrstrom auf 0,7 A setzen? ⚠ Der Z-Antrieb hebt das ganze Bett. Auf
+              verlorene Schritte achten: wandernde Schichthöhe, absackendes Bett —
+              besonders bei schwerem Werkstück. Klipper startet neu.
             cmd:
               - bash
               - -xc
@@ -130,11 +168,15 @@ settings:
                 sh /usr/local/share/firmware-config/z-axis/set-z-current.sh 0.7 &&
                 /etc/init.d/S60klipper restart
           custom:
-            label: "Custom\u2026"
-            confirm: "Set a custom Z run current (0.50-0.90A)? WARNING: The Z drive lifts the entire bed - too little current risks lost steps and bed sag. Also re-verify sensorless Z homing after changes, as StallGuard sensitivity shifts with current. Klipper will restart."
+            label: "Eigene Werte…"
+            confirm: >-
+              Eigenen Z-Fahrstrom setzen (0,50–0,90 A)? ⚠ Der Z-Antrieb hebt das ganze
+              Bett; zu wenig Strom kostet Schritte und lässt das Bett absacken. Danach
+              auch die Referenzfahrt prüfen — die Drehmomenterkennung reagiert bei
+              anderem Strom anders. Klipper startet neu.
             inputs:
               - name: Z_CUR
-                label: "run_current in A (0.50-0.90)"
+                label: "Fahrstrom in A (0,50–0,90)"
                 placeholder: "0.75"
                 regex: '^(0\.[5-8][0-9]?|0\.90?)$'
             cmd:
