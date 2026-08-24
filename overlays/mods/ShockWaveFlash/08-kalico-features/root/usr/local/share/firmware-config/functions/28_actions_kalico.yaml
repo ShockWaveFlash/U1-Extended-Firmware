@@ -145,6 +145,29 @@ actions:
         background: false
         message: "Kaltextrusion wird gesperrt:"
 
+      mpc-calibrate-one:
+        label: MPC kalibrieren (nur Hotend 1, Probelauf)
+        description: >-
+          Kalibriert nur den ersten Werkzeugkopf. Gedacht als Probelauf, bevor alle
+          vier drankommen: Der Ablauf dauert je Kopf rund 10 bis 20 Minuten, und man
+          will vorher wissen, ob er sauber durchläuft und ob sich die Werte danach
+          festschreiben lassen.
+          <br>Der Ablauf ist immer derselbe: Erst muss das Hotend auf Raumtemperatur
+          abkühlen — daraus bestimmt Kalico die Umgebungstemperatur. Dann heizt es
+          über 200 °C und misst, wie schnell die Temperatur steigt. Zuletzt hält es
+          die Temperatur etwa eine Minute und misst den Wärmeverlust, erst ohne und
+          dann mit Lüfter in mehreren Stufen.
+          <br>⚠ Die Werte stehen danach nur im Arbeitsspeicher. Erst SAVE_CONFIG
+          schreibt sie fest — das startet Klipper neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh mpc
+        confirm: "MPC-Kalibrierung für Hotend 1 starten? Dauert 10 bis 20 Minuten. Das Hotend kühlt zuerst auf Raumtemperatur ab und heizt dann über 200 Grad. Währenddessen nicht drucken."
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/mpc-calibrate-all.sh
+          - extruder
+        background: true
+        message: "MPC-Kalibrierung für Hotend 1 läuft..."
+
       mpc-calibrate-all:
         label: MPC kalibrieren (alle 4 Hotends)
         description: >-
