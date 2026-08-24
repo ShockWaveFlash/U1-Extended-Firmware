@@ -40,6 +40,26 @@ else
     echo "  Hotend-Regelung    : PID (stock)"
 fi
 
+if [ -f /oem/.kalico-separate-autosave ]; then
+    echo "  SAVE_CONFIG        : eigene Datei (printer.autosave.cfg)"
+    [ -f /home/lava/printer_data/config/printer.autosave.cfg ] \
+        || echo "                       (noch nicht angelegt - ein SAVE_CONFIG fehlt)"
+else
+    echo "  SAVE_CONFIG        : printer.cfg (Standard, Stock-tauglich)"
+fi
+
+echo ""
+echo "Kaltextrusion (nicht dauerhaft, gilt bis zum Klipper-Neustart):"
+for E in extruder extruder1 extruder2 extruder3; do
+    A=$(/usr/local/bin/curl -s -X POST \
+        "http://127.0.0.1:7125/printer/gcode/script?script=COLD_EXTRUDE%20HEATER=$E" 2>/dev/null)
+    case "$A" in
+        *enabled*)  echo "  $E: erlaubt" ;;
+        *disabled*) echo "  $E: gesperrt" ;;
+        *)          echo "  $E: nicht abfragbar (laeuft Kalico?)" ;;
+    esac
+done
+
 echo ""
 echo "High-Precision Stepping: nur per MCU-Flash schaltbar (CONFIG_HIGH_PREC_STEP),"
 echo "  nicht ueber diese Oberflaeche."

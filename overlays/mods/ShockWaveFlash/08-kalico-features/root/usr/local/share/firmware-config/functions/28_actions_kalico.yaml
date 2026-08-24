@@ -14,33 +14,32 @@ actions:
         message: "Kalico status:"
 
       cold-extrude-on:
-        label: Allow Cold Extrusion
+        label: Allow Cold Extrusion (all 4)
         description: >-
-          Sends M302 P1 - allows extruder moves below the minimum extrusion
-          temperature. Useful for clearing a jam or pulling filament without
-          heating. NOT persistent: a Klipper restart resets it. Needs the Kalico
-          tree; stock Klipper does not know M302.
-        confirm: "Allow cold extrusion? Moving cold filament can strain the extruder gears - use short moves only."
+          Allows extruder moves below the minimum extrusion temperature on all four
+          hotends (COLD_EXTRUDE HEATER=... ENABLE=1). Useful for clearing a jam or
+          pulling filament without heating. NOT persistent: a Klipper restart
+          resets it. Needs the Kalico tree; stock Klipper knows neither M302 nor
+          COLD_EXTRUDE.
+        confirm: "Allow cold extrusion on all four hotends? Moving cold filament can strain the extruder gears - use short moves only."
         cmd:
           - sh
-          - -c
-          - |
-            /usr/local/bin/curl -s -X POST "http://127.0.0.1:7125/printer/gcode/script?script=M302%20P1" \
-              && echo "Cold extrusion allowed (until the next Klipper restart)."
+          - /usr/local/share/firmware-config/kalico/set-cold-extrude.sh
+          - "1"
         background: false
-        message: "Sending M302 P1..."
+        message: "Enabling cold extrusion..."
 
       cold-extrude-off:
-        label: Forbid Cold Extrusion
-        description: Sends M302 P0 - restores the normal minimum extrusion temperature.
+        label: Forbid Cold Extrusion (all 4)
+        description: >-
+          Restores the normal minimum extrusion temperature on all four hotends
+          (COLD_EXTRUDE HEATER=... ENABLE=0).
         cmd:
           - sh
-          - -c
-          - |
-            /usr/local/bin/curl -s -X POST "http://127.0.0.1:7125/printer/gcode/script?script=M302%20P0" \
-              && echo "Cold extrusion forbidden again."
+          - /usr/local/share/firmware-config/kalico/set-cold-extrude.sh
+          - "0"
         background: false
-        message: "Sending M302 P0..."
+        message: "Disabling cold extrusion..."
 
       mpc-calibrate-all:
         label: Calibrate MPC (all 4 hotends)

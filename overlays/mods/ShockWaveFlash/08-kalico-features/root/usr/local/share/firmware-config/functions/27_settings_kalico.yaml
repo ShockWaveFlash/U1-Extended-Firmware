@@ -3,6 +3,66 @@ settings:
     label: Kalico Features
     items:
 
+      klipper_tree:
+        label: Klipper Tree
+        description: >-
+          Which host software runs the printer. "Snapmaker stock" is the factory
+          Klipper 1.6.0 that came with the firmware; "Kalico" is the merged tree
+          under /home/lava/kalico. The switch is the file /oem/.klipper-tree -
+          if it is missing or points nowhere, the stock tree starts. The way back
+          is therefore always open, and nothing is flashed either way. Klipper
+          restarts when you switch. Not available while printing.
+        get_cmd:
+          - sh
+          - -c
+          - |
+            p=$(pgrep -f klippy.py | head -1)
+            [ -n "$p" ] && tr '\0' ' ' < "/proc/$p/cmdline" | grep -q '/kalico/' \
+              && echo kalico || echo stock
+        options:
+          stock:
+            label: Snapmaker stock
+            confirm: "Switch back to Snapmaker's own Klipper? Klipper will restart."
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-tree.sh
+              - stock
+          kalico:
+            label: Kalico
+            confirm: "Switch to the Kalico tree? Klipper will restart. If anything goes wrong, switch back here or delete /oem/.klipper-tree over SSH."
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-tree.sh
+              - kalico
+
+      autosave_location:
+        label: SAVE_CONFIG Location
+        description: >-
+          Where Klipper stores calibration data written by SAVE_CONFIG - on the U1
+          that is the bed mesh and the PID values of all four hotends. "printer.cfg"
+          is Klipper's original behaviour and the one Snapmaker's own tree
+          understands, so the way back stays intact. "Separate file" is Kalico's
+          newer behaviour (printer.autosave.cfg); after switching, one SAVE_CONFIG
+          moves the data - from then on the stock tree no longer sees it.
+        get_cmd:
+          - sh
+          - -c
+          - '[ -f /oem/.kalico-separate-autosave ] && echo separate || echo main'
+        options:
+          main:
+            label: printer.cfg (default)
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-autosave.sh
+              - main
+          separate:
+            label: Separate file
+            confirm: "Move SAVE_CONFIG data to printer.autosave.cfg? Snapmaker's own Klipper will no longer find the bed mesh and hotend PID values. Klipper will restart."
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-autosave.sh
+              - separate
+
       shaper_mode:
         label: Input Shaper Type
         description: >-
