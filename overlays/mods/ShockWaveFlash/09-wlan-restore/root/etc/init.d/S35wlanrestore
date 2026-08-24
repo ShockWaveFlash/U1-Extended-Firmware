@@ -1,0 +1,107 @@
+#!/bin/sh
+#
+# WLAN-Zugangsdaten ueber den Overlay-Reset retten (Mod-Overlay 09)
+#
+# / ist ein overlayfs, dessen obere Schicht bei jedem Boot geleert wird. Damit
+# faellt /etc/wpa_supplicant.conf auf die Fassung aus dem squashfs zurueck, und
+# die ist ein 65-Byte-Rumpf ohne network-Block (belegt: /overlay/etc/
+# wpa_supplicant.conf, 65 B). Folge am 2026-08-24 im gui.log:
+#   05:32:25 module_rk_check_remembered_ssid  Get Saved AP Fail!!!
+#   05:34:15 on_keyboard_enter Connect:::: (FRITZ!Box 7590 ZF)
+# -- das WLAN-Passwort musste per Bildschirmtastatur neu eingegeben werden.
+#
+# start: fehlt der network-Block in der aktiven Datei, wird sie aus der ersten
+#        persistenten Quelle hergestellt, die einen hat.
+# stop:  hat die aktive Datei einen network-Block, wird die Sicherung in /oem
+#        aufgefrischt. inittab ruft beim Herunterfahren /etc/init.d/rcK, und rcK
+#        startet jedes S??*-Skript mit "stop" -- der Aufruf ist also belegt.
+#        Bei hartem Ausschalten laeuft rcK nicht; dann bleibt die Sicherung so
+#        alt, wie sie beim letzten sauberen Herunterfahren war.
+#
+# Praefix S35: der erste Verbraucher der Datei ist S36wifibt-init.sh (ruft
+# "ifup wlan0", was ueber /etc/network/if-pre-up.d/wpa-conf.sh auf
+# /etc/wpa_supplicant.conf verlinkt); S30dbus laeuft davor, /oem haengt schon
+# aus der inittab-sysinit ("mount -a", PARTLABEL=oem in der fstab).
+#
+# Notbremse: `touch /oem/.no-wlanrestore` schaltet beide Zweige ab.
+
+AKTIV="/etc/wpa_supplicant.conf"
+SICHERUNG="/oem/wpa_supplicant.conf.backup"
+
+# Kein Dateiinhalt ins Log -- die Datei enthaelt das WLAN-Passwort im Klartext.
+hat_netz() {
+    grep -qF "network={" "$1" 2>/dev/null
+}
+
+start() {
+    if [ -f /oem/.no-wlanrestore ]; then
+        echo "WLAN: Wiederherstellung deaktiviert (/oem/.no-wlanrestore)"
+        return 0
+    fi
+
+    if hat_netz "$AKTIV"; then
+        echo "WLAN: gespeicherte Netze vorhanden, nichts zu tun"
+        return 0
+    fi
+
+    # Bewusst nur diese eine Quelle. /oem/printer_data/gui/wpa_supplicant.conf
+    # waere die naheliegende zweite, taugt aber nicht: die vom Touchscreen-GUI
+    # geschriebene Fassung enthaelt weder key_mgmt noch ieee80211w. In einem
+    # WPA3/SAE-Netz wuerde daraus eine scheiternde Verbindung statt gar keiner --
+    # und der GUI-Weg, der die Zugangsdaten sonst selbst wieder anbietet, waere
+    # blockiert. Fehlt die Sicherung, ist Nichtstun das bessere Verhalten.
+    if ! hat_netz "$SICHERUNG"; then
+        echo "WLAN: keine Sicherung mit gespeicherten Netzen gefunden"
+        return 0
+    fi
+
+    # Nur lesend auf die Sicherung -- sie wird hier nie ueberschrieben.
+    if ! cp "$SICHERUNG" "$AKTIV"; then
+        echo "WLAN: Kopieren von $SICHERUNG fehlgeschlagen"
+        return 1
+    fi
+    chown root:root "$AKTIV"
+    chmod 600 "$AKTIV"
+    echo "WLAN: Zugangsdaten aus $SICHERUNG hergestellt"
+    return 0
+}
+
+stop() {
+    if [ -f /oem/.no-wlanrestore ]; then
+        return 0
+    fi
+
+    if ! hat_netz "$AKTIV"; then
+        echo "WLAN: keine gespeicherten Netze, Sicherung bleibt wie sie ist"
+        return 0
+    fi
+
+    # Erst daneben schreiben, dann umhaengen: ein Stromausfall mitten im
+    # Kopieren darf keine halbe Sicherung hinterlassen.
+    if ! cp "$AKTIV" "$SICHERUNG.neu"; then
+        echo "WLAN: Sicherung fehlgeschlagen"
+        return 1
+    fi
+    chmod 600 "$SICHERUNG.neu"
+    mv "$SICHERUNG.neu" "$SICHERUNG"
+    echo "WLAN: Sicherung aufgefrischt ($SICHERUNG)"
+    return 0
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0

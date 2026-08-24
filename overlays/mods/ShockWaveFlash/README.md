@@ -239,3 +239,20 @@ Dropping `/oem/.debug` also restores the appliance's self-healing: a broken `/et
 no longer survives a reboot. Note that the WLAN credentials live in the overlay too —
 that is what overlay `09-wlan-restore` is for.
 
+## 09-wlan-restore — keep Wi-Fi credentials across the overlay wipe
+
+`RK_wifi_getSavedInfo` reads the saved networks from `/etc/wpa_supplicant.conf`, which
+lives in the volatile overlay; the squashfs version is a 65-byte stub with no
+`network={` block. On 2026-08-24 this cost the printer its network — `gui.log` shows
+`Get Saved AP Fail!!!` followed by the password being typed in on the touchscreen.
+
+`/etc/init.d/S35wlanrestore` restores `/etc/wpa_supplicant.conf` from
+`/oem/wpa_supplicant.conf.backup` when the active file has no `network={` block, and
+refreshes that backup on shutdown (`rcK` calls every `S??*` script with `stop`).
+It runs before `S36wifibt-init.sh`, the first consumer of the file.
+
+The GUI's own copy in `/oem/printer_data/gui/` is deliberately **not** used as a
+fallback: it carries neither `key_mgmt` nor `ieee80211w`, which in a WPA3/SAE network
+turns "no credentials" into "credentials that fail" — and blocks the GUI's own retry.
+
+Kill switch: `touch /oem/.no-wlanrestore` disables both directions.
