@@ -1,56 +1,208 @@
 actions:
   kalico:
+    label: Kalico
     items:
 
       kalico-status:
-        label: Show Kalico Status
+        label: Zustand anzeigen
         description: >-
-          Shows which Klipper tree is running (Snapmaker stock or Kalico) and which
-          Kalico features are currently switched on.
+          Zeigt, welcher Klipper-Unterbau gerade läuft und wie die Kalico-Schalter
+          stehen. Erste Anlaufstelle, wenn unklar ist, ob eine Einstellung wirklich
+          angekommen ist — die Werte werden am laufenden System abgelesen, nicht aus
+          den Konfigurationsdateien geraten.
         cmd:
           - sh
           - /usr/local/share/firmware-config/kalico/status.sh
         background: false
-        message: "Kalico status:"
+        message: "Zustand wird ermittelt:"
+
+      mesh-check:
+        label: Bettraster bewerten
+        description: >-
+          Untersucht das geladene Bettraster und nennt zwei Zahlen: den größten
+          Höhenunterschied über die ganze Fläche und die größte Stufe zwischen zwei
+          benachbarten Messpunkten.
+          Die zweite Zahl ist die wichtigere. Eine gleichmäßige Wölbung fährt die
+          Rasterkorrektur problemlos aus — eine steile Stufe zwischen Nachbarpunkten
+          gibt es in echter Bettgeometrie kaum, sie deutet auf einen Messausreißer,
+          einen Krümel unter der Platte oder eine lose Schraube hin.
+          Anschließend läuft Kalicos eigene Prüfung BED_MESH_CHECK mit einem Grenzwert
+          von 0,3 mm, damit die Bewertung aus derselben Quelle kommt, die man auch ins
+          Startmakro eines Druckprofils schreiben würde.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/mesh-check.sh
+        background: false
+        message: "Bettraster wird ausgewertet:"
+
+      heater-interrupt:
+        label: Warten auf Temperatur abbrechen
+        description: >-
+          Bricht ein laufendes TEMPERATURE_WAIT ab. Klipper wartet dort ohne Zeitlimit,
+          bis eine Temperatur erreicht ist — wird sie nie erreicht, etwa weil das Ziel
+          zu hoch gewählt war oder ein Lüfter dagegenhält, hängt der Drucker fest und
+          nimmt auch keine anderen Befehle mehr an.
+          Ohne diesen Befehl hilft in dem Fall nur ein Klipper-Neustart, der einen
+          laufenden Druck mitnimmt. HEATER_INTERRUPT beendet nur das Warten; Heizung,
+          Druck und Position bleiben unangetastet.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/gcode.sh
+          - HEATER_INTERRUPT
+        background: false
+        message: "Wartebefehl wird abgebrochen:"
+
+      reload-macros:
+        label: Makros neu laden
+        description: >-
+          Liest die Makro-Definitionen aus den Konfigurationsdateien neu ein, ohne
+          Klipper neu zu starten. Praktisch beim Ändern eigener Makros: sonst kostet
+          jede Zeile Änderung einen kompletten Neustart samt Verbindungsaufbau zu allen
+          sechs Mikrocontrollern.
+          <br>⚠ Es werden nur bereits geladene Makros aktualisiert. Ein NEU angelegtes oder
+          ein gelöschtes Makro erfordert weiterhin einen Klipper-Neustart. Variablen,
+          die zur Laufzeit mit SET_GCODE_VARIABLE gesetzt wurden, bleiben erhalten.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/gcode.sh
+          - RELOAD_GCODE_MACROS
+        background: false
+        message: "Makros werden neu geladen:"
+
+      log-rollover:
+        label: Neue Protokolldatei beginnen
+        description: >-
+          Schließt die laufende klippy.log ab und beginnt eine neue. Sinnvoll VOR einem
+          Versuch, den man später auswerten will: die neue Datei enthält dann nur noch
+          diesen Versuch, statt dass man ihn aus tagelangem Protokoll heraussuchen muss.
+          Die alte Datei bleibt erhalten und wird nicht überschrieben.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/gcode.sh
+          - LOG_ROLLOVER
+        background: false
+        message: "Protokoll wird umgeschaltet:"
+
+      pid-profile-show:
+        label: Regelwerte und PID-Profile anzeigen
+        description: >-
+          Zeigt, welcher Satz Regelwerte im ersten Hotend gerade aktiv ist und welche
+          Werte dazugehören.
+          Hintergrund: Die richtigen PID-Werte hängen von Zieltemperatur und
+          Lüfterdrehzahl ab — ein Satz, der bei 210 Grad mit stehendem Lüfter stimmt,
+          regelt bei 250 Grad und vollem Lüfter schlechter. Kalico kann deshalb mehrere
+          benannte Sätze vorhalten.
+          Ein neues Profil anlegen: erst PID_CALIBRATE HEATER=extruder TARGET=..., dann
+          PID_PROFILE SAVE=&lt;name&gt; HEATER=extruder, dann SAVE_CONFIG.
+          Umschalten im Betrieb erledigt der Schalter „PID-Profil der Hotends“.
+          <br>⚠ Kalicos eigener Befehl PID_PROFILE GET_VALUES wird hier absichtlich
+          NICHT verwendet: er stürzt ab, sobald ein Profil nie über PID_CALIBRATE
+          gespeichert wurde — und nimmt Klipper mit in den Shutdown (am 24.08. am Gerät
+          erlebt). Die Werte werden stattdessen direkt aus der Konfiguration gelesen.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/pid-info.sh
+        background: false
+        message: "PID-Profil wird abgefragt:"
 
       cold-extrude-on:
-        label: Allow Cold Extrusion (all 4)
+        label: Kaltextrusion erlauben (alle 4)
         description: >-
-          Allows extruder moves below the minimum extrusion temperature on all four
-          hotends (COLD_EXTRUDE HEATER=... ENABLE=1). Useful for clearing a jam or
-          pulling filament without heating. NOT persistent: a Klipper restart
-          resets it. Needs the Kalico tree; stock Klipper knows neither M302 nor
-          COLD_EXTRUDE.
-        confirm: "Allow cold extrusion on all four hotends? Moving cold filament can strain the extruder gears - use short moves only."
+          Hebt die Mindesttemperatur für Extruderbewegungen an allen vier Hotends auf.
+          Normalerweise verweigert Klipper jede Filamentbewegung unterhalb von etwa
+          170 Grad, damit niemand kaltes Filament durch die Düse presst und dabei das
+          Antriebsrad oder die Düse beschädigt.
+          Gebraucht wird die Freigabe, um verstopftes Filament herauszuziehen oder eine
+          Düse ohne Aufheizen freizubekommen.
+          <br>⚠ Nur kurze Wege fahren — kaltes Filament kann das Antriebsrad die Oberfläche
+          rundschleifen lassen.
+          Nicht dauerhaft: Ein Klipper-Neustart setzt die Sperre wieder ein.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        confirm: "Kaltextrusion an allen vier Hotends erlauben? Kaltes Filament zu fördern belastet Antriebsrad und Düse - nur kurze Wege fahren."
         cmd:
           - sh
           - /usr/local/share/firmware-config/kalico/set-cold-extrude.sh
           - "1"
         background: false
-        message: "Enabling cold extrusion..."
+        message: "Kaltextrusion wird freigegeben:"
 
       cold-extrude-off:
-        label: Forbid Cold Extrusion (all 4)
+        label: Kaltextrusion sperren (alle 4)
         description: >-
-          Restores the normal minimum extrusion temperature on all four hotends
-          (COLD_EXTRUDE HEATER=... ENABLE=0).
+          Setzt die normale Mindesttemperatur für Extruderbewegungen an allen vier
+          Hotends wieder in Kraft. Nach getaner Arbeit immer wieder einschalten — die
+          Sperre ist ein Schutz für Antriebsrad und Düse.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
         cmd:
           - sh
           - /usr/local/share/firmware-config/kalico/set-cold-extrude.sh
           - "0"
         background: false
-        message: "Disabling cold extrusion..."
+        message: "Kaltextrusion wird gesperrt:"
 
       mpc-calibrate-all:
-        label: Calibrate MPC (all 4 hotends)
+        label: MPC kalibrieren (alle 4 Hotends)
         description: >-
-          Runs MPC_CALIBRATE for extruder, extruder1, extruder2 and extruder3 one
-          after another. Each hotend heats up, then cools with the fan stepping
-          through several speeds. Expect roughly 10-20 minutes PER hotend. Only
-          meaningful once the hotends are switched to MPC.
-        confirm: "Start MPC calibration for ALL FOUR hotends? This heats every hotend in turn and takes up to an hour in total. Remove filament and make sure the nozzles are clean first. Do not print during calibration."
+          Ermittelt die physikalischen Kennwerte, mit denen die modellbasierte Regelung
+          rechnet — nacheinander für extruder, extruder1, extruder2 und extruder3.
+          Jedes Hotend wird aufgeheizt und dann kontrolliert abgekühlt, wobei der
+          Bauteillüfter mehrere Stufen durchfährt. Daraus bestimmt Kalico, wieviel Wärme
+          der Block speichert und wieviel der Lüfter bei welcher Drehzahl abführt.
+          Dauer: etwa 10 bis 20 Minuten JE Hotend, insgesamt also bis zu einer Stunde.
+          Sinnvoll nur, wenn die Hotends auf MPC stehen. Vorher Filament entnehmen und
+          die Düsen sauber machen — anhaftendes Material verfälscht die Wärmebilanz.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh mpc
+        confirm: "MPC-Kalibrierung für ALLE VIER Hotends starten? Jedes Hotend wird nacheinander aufgeheizt, insgesamt bis zu einer Stunde. Vorher Filament entnehmen und Düsen säubern. Währenddessen nicht drucken."
         cmd:
           - sh
           - /usr/local/share/firmware-config/kalico/mpc-calibrate-all.sh
         background: true
-        message: "MPC calibration running - follow the console for progress..."
+        message: "MPC-Kalibrierung läuft - Fortschritt in der Konsole..."
+
+      ringing-tower:
+        label: Testdruck - Turm gegen Geisterbilder
+        description: >-
+          Druckt einen Kalibrierturm, bei dem die Beschleunigung alle 5 mm Höhe um
+          500 mm/s² steigt, beginnend bei 1500 mm/s². An der Höhe, ab der die Kerben in
+          der Wand unsauber werden, liest man ab, wieviel Beschleunigung der Drucker
+          verträgt — und aus dem Abstand der Wellen die Resonanzfrequenz.
+          Der Vorteil gegenüber einer gesliceten Testdatei: die Stufen entstehen im
+          Drucker selbst, es muss nichts für jede Stufe neu gesliced werden.
+          <br>⚠ Vor dem Start: Düse und Bett auf Temperatur bringen und Filament laden — der
+          Befehl tut das nicht selbst. Gedruckt wird mit dem gerade aktiven Werkzeug.
+          Freischalten über den Schalter „Testdrucke“.
+        if_cmd: test -f /oem/printer_data/config/extended/klipper/kalico_testtowers.cfg
+        confirm: "Testdruck starten? Düse und Bett müssen bereits auf Temperatur sein und Filament geladen - der Befehl heizt nicht selbst."
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/gcode.sh
+          - PRINT_RINGING_TOWER
+        background: true
+        message: "Testdruck wird gestartet:"
+
+      pa-tower:
+        label: Testdruck - Turm für den Druckvorhalt
+        description: >-
+          Druckt einen Kalibrierturm für den Druckvorhalt (Pressure Advance). Jede Bahn
+          wird mit drei verschiedenen Geschwindigkeiten gedruckt, der Vorhaltwert steigt
+          mit der Höhe. Abgelesen wird die Höhe, in der die Bahn bei allen drei
+          Geschwindigkeiten gleich breit bleibt.
+          Weil hier mehrere Geschwindigkeiten in einer Schicht vorkommen, zeigt dieser
+          Turm auch, ob ein einzelner linearer Wert überhaupt für alle Geschwindigkeiten
+          passt — genau die Frage, für die es die nichtlinearen Modelle gibt.
+          <br>⚠ Vor dem Start: Düse und Bett auf Temperatur bringen und Filament laden — der
+          Befehl tut das nicht selbst. Gedruckt wird mit dem gerade aktiven Werkzeug.
+          Freischalten über den Schalter „Testdrucke“.
+        if_cmd: test -f /oem/printer_data/config/extended/klipper/kalico_testtowers.cfg
+        confirm: "Testdruck starten? Düse und Bett müssen bereits auf Temperatur sein und Filament geladen - der Befehl heizt nicht selbst."
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/gcode.sh
+          - PRINT_PA_TOWER
+        background: true
+        message: "Testdruck wird gestartet:"

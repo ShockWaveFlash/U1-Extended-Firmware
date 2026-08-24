@@ -1,17 +1,20 @@
 settings:
   kalico:
-    label: Kalico Features
+    label: Kalico
     items:
 
       klipper_tree:
-        label: Klipper Tree
+        label: Klipper-Unterbau
         description: >-
-          Which host software runs the printer. "Snapmaker stock" is the factory
-          Klipper 1.6.0 that came with the firmware; "Kalico" is the merged tree
-          under /oem/apps/kalico. The switch is the file /oem/.klipper-tree -
-          if it is missing or points nowhere, the stock tree starts. The way back
-          is therefore always open, and nothing is flashed either way. Klipper
-          restarts when you switch. Not available while printing.
+          Welche Steuersoftware den Drucker fährt. „Snapmaker Original“ ist das
+          ausgelieferte Klipper 1.6.0. „Kalico“ ist ein Klipper-Ableger, der
+          zusätzliche Funktionen mitbringt — die übrigen Schalter dieser Gruppe
+          setzen ihn voraus und erscheinen erst, wenn er läuft.
+          Umgeschaltet wird über die Datei /oem/.klipper-tree; fehlt sie, startet
+          das Original. Geflasht wird dabei nichts, beide Bäume liegen nebeneinander
+          auf dem Gerät, und der Rückweg ist jederzeit offen — notfalls per SSH mit
+          „rm /oem/.klipper-tree“. Klipper startet beim Umschalten neu.
+          Während eines laufenden Drucks verweigert der Schalter den Wechsel.
         get_cmd:
           - sh
           - -c
@@ -19,85 +22,455 @@ settings:
             p=$(pgrep -f klippy.py | head -1)
             [ -n "$p" ] && tr '\0' ' ' < "/proc/$p/cmdline" | grep -q '/kalico/' \
               && echo kalico || echo stock
+        default: stock
         options:
           stock:
-            label: Snapmaker stock
-            confirm: "Switch back to Snapmaker's own Klipper? Klipper will restart."
+            label: Snapmaker Original
+            confirm: "Zurück auf Snapmakers eigenes Klipper? Klipper startet neu."
             cmd:
               - sh
               - /usr/local/share/firmware-config/kalico/set-tree.sh
               - stock
           kalico:
             label: Kalico
-            confirm: "Switch to the Kalico tree? Klipper will restart. If anything goes wrong, switch back here or delete /oem/.klipper-tree over SSH."
+            confirm: "Auf Kalico umschalten? Klipper startet neu. Falls etwas schiefgeht, hier zurückschalten oder per SSH /oem/.klipper-tree löschen."
             cmd:
               - sh
               - /usr/local/share/firmware-config/kalico/set-tree.sh
               - kalico
 
       autosave_location:
-        label: SAVE_CONFIG Location
+        label: Speicherort für SAVE_CONFIG
         description: >-
-          Where Klipper stores calibration data written by SAVE_CONFIG - on the U1
-          that is the bed mesh and the PID values of all four hotends. "printer.cfg"
-          is Klipper's original behaviour and the one Snapmaker's own tree
-          understands, so the way back stays intact. "Separate file" is Kalico's
-          newer behaviour (printer.autosave.cfg); after switching, one SAVE_CONFIG
-          moves the data - from then on the stock tree no longer sees it.
+          Wohin Klipper die selbst ermittelten Kalibrierwerte schreibt — beim U1 sind
+          das das Bettraster und die PID-Werte aller vier Hotends.
+          <br>„printer.cfg“ ist das ursprüngliche Verhalten: die Werte landen als
+          Kommentarblock am Ende der Hauptdatei. Das versteht auch Snapmakers eigenes
+          Klipper, der Rückweg bleibt also unbeschädigt.
+          <br>„Eigene Datei“ ist Kalicos neueres Verhalten (printer.autosave.cfg). Sauberer
+          getrennt, aber nach dem ersten SAVE_CONFIG findet der Originalbaum das
+          Bettraster und die Hotend-PID-Werte nicht mehr.
         get_cmd:
           - sh
           - -c
           - '[ -f /oem/.kalico-separate-autosave ] && echo separate || echo main'
+        default: main
         options:
           main:
-            label: printer.cfg (default)
+            label: printer.cfg (Standard)
             cmd:
               - sh
               - /usr/local/share/firmware-config/kalico/set-autosave.sh
               - main
           separate:
-            label: Separate file
-            confirm: "Move SAVE_CONFIG data to printer.autosave.cfg? Snapmaker's own Klipper will no longer find the bed mesh and hotend PID values. Klipper will restart."
+            label: Eigene Datei
+            confirm: "Kalibrierwerte künftig nach printer.autosave.cfg schreiben? Snapmakers eigenes Klipper findet Bettraster und Hotend-PID danach nicht mehr. Klipper startet neu."
             cmd:
               - sh
               - /usr/local/share/firmware-config/kalico/set-autosave.sh
               - separate
 
-      shaper_mode:
-        label: Input Shaper Type
+      home_current:
+        label: Motorstrom beim Referenzieren (X/Y)
         description: >-
-          Switches between classic input shapers and Kalico's smooth input shapers.
-          Smooth shapers cancel vibration over a frequency range instead of a single
-          point, which usually gives cleaner corners - but they cost noticeably more
-          CPU on the host. The U1 runs a Rockchip RK3562 (4x Cortex-A53), which is
-          below Kalico's recommended hardware, so watch the "sysload" value in
-          klippy.log after switching. Requires the Kalico tree to be active.
+          Mit wieviel Strom die X- und Y-Motoren fahren, während der Drucker seinen
+          Nullpunkt sucht. Der U1 referenziert ohne Endschalter: der Treiber erkennt
+          den Anschlag daran, dass das Drehmoment einbricht („sensorless homing“).
+          Damit das funktioniert, muss der Strom niedriger sein als im Druckbetrieb —
+          mit vollem Strom drückt der Motor einfach weiter und der Anschlag bleibt
+          unbemerkt. Genau das passiert ohne diesen Schalter: Kalico setzt den
+          Homing-Strom sonst auf den vollen Fahrstrom von 1,4 A, und das Referenzieren
+          scheitert mit „No trigger on y after full movement“.
+          0,650 A ist der Wert, den auch das Homing-Makro des Druckers verwendet —
+          damit ziehen beide am selben Strang. Zu niedrig ist ebenfalls schlecht: dann
+          meldet der Treiber schon unterwegs einen Anschlag, den es gar nicht gibt.
+          Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_home_current.cfg
+            [ -f "$f" ] || { echo aus; exit 0; }
+            v=$(grep -m1 '^home_current' "$f" | awk '{print $2}')
+            case "$v" in
+              0.650) echo standard ;;
+              0.500) echo niedrig ;;
+              0.800) echo hoch ;;
+              *)     echo eigen ;;
+            esac
+        default: standard
+        options:
+          standard:
+            label: 0,650 A (empfohlen)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-home-current.sh 0.650 &&
+                /etc/init.d/S60klipper restart
+          niedrig:
+            label: 0,500 A (empfindlicher)
+            confirm: "Homing-Strom auf 0,500 A senken? Der Anschlag wird früher erkannt — aber auch dann, wenn gar keiner da ist. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-home-current.sh 0.500 &&
+                /etc/init.d/S60klipper restart
+          hoch:
+            label: 0,800 A (unempfindlicher)
+            confirm: "Homing-Strom auf 0,800 A anheben? Falls der Kopf schon vor dem Anschlag stehenbleibt, hilft das — wird er zu hoch, wird der Anschlag gar nicht mehr erkannt. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-home-current.sh 0.800 &&
+                /etc/init.d/S60klipper restart
+          eigen:
+            label: "Eigener Wert…"
+            confirm: "Eigenen Homing-Strom setzen (0,30–1,49 A)? ⚠ Beim ersten Referenzieren danach danebenstehen und notfalls ausschalten: ein zu hoher Wert lässt den Kopf in den Rahmen fahren. Klipper startet neu."
+            inputs:
+              - name: HOME_CUR
+                label: "Homing-Strom in A (0.30–1.49)"
+                placeholder: "0.650"
+                regex: '^(0\.[3-9][0-9]{0,2}|1\.[0-4][0-9]{0,2})$'
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-home-current.sh "${HOME_CUR}" &&
+                /etc/init.d/S60klipper restart
+          aus:
+            label: Nicht setzen (Kalico-Standard)
+            confirm: "⚠ Ohne eigenen Homing-Strom referenziert Kalico mit dem vollen Fahrstrom von 1,4 A — beim U1 scheitert das Referenzieren dann. Wirklich abschalten? Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-home-current.sh aus &&
+                /etc/init.d/S60klipper restart
+
+      pico_optional:
+        label: Rahmenfühler-Pico entbehrlich
+        description: >-
+          Am einzigen freien USB-Anschluss des U1 hängt ein zweiter Kleinrechner
+          (Raspberry Pi Pico), der die Rahmentemperatur misst. Klipper behandelt jeden
+          eingetragenen Mikrocontroller als lebenswichtig: fehlt er beim Start, startet
+          Klipper überhaupt nicht — und genau das passiert jedes Mal, wenn der USB-Port
+          für einen Wiederherstellungs-Stick gebraucht wird.
+          Eingeschaltet darf der Pico fehlen, abgezogen und wieder angesteckt werden,
+          ohne dass der Drucker stehenbleibt; Klipper nimmt ihn wieder an, sobald er
+          zurück ist.
+          <br>⚠ Der Preis: Fällt der Pico während eines Drucks aus, gilt das nicht mehr als
+          Fehler. Die Z-Drift-Korrektur, die auf der Rahmentemperatur aufbaut, rechnet
+          dann mit dem letzten bekannten Wert weiter.
+          Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - sh
+          - -c
+          - '[ -f /oem/printer_data/config/extended/klipper/kalico_pico_optional.cfg ] && echo an || echo aus'
+        default: aus
+        options:
+          aus:
+            label: Pflicht (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-pico-noncritical.sh off &&
+                /etc/init.d/S60klipper restart
+          an:
+            label: Entbehrlich
+            confirm: "Den Rahmenfühler-Pico als entbehrlich einstufen? Klipper startet dann auch ohne ihn — meldet seinen Ausfall aber auch nicht mehr. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-pico-noncritical.sh on &&
+                /etc/init.d/S60klipper restart
+
+      hotend_control:
+        label: Temperaturregelung der Hotends
+        description: >-
+          Nach welchem Verfahren die vier Düsen ihre Temperatur halten.
+          <br>„PID“ ist Klippers Original: es misst den Temperaturfehler und heizt
+          nach — es reagiert also immer erst, NACHDEM die Temperatur eingebrochen ist.
+          <br>„Velocity PID“ rechnet mit der Änderungsrate statt mit dem absoluten Fehler.
+          Es überschwingt weniger und reagiert schneller, ist dafür empfindlicher
+          gegenüber einem verrauschten Temperaturfühler.
+          <br>„MPC“ bildet das Hotend physikalisch nach — 48 W Heizleistung, Wärmekapazität
+          des Blocks, die Wärme, die durchlaufendes Filament abführt, und die Kühlung
+          durch den Bauteillüfter. Dadurch weiß die Regelung schon vorher, dass gleich
+          mehr Leistung nötig ist, und hält die Temperatur bei Flussänderungen und
+          Lüftersprüngen deutlich besser. Der Vorteil ist beim U1 besonders groß, weil
+          jeder Werkzeugwechsel einen Lastwechsel bedeutet.
+          <br>⚠ Nach dem Umschalten auf MPC einmal die Kalibrierung fahren (Aktion
+          „MPC kalibrieren“), sonst arbeitet MPC nur mit Schätzwerten.
+          <br>⚠ Bei „Velocity PID“ läuft eine andere Regelklasse an als bei PID. Ob
+          Snapmakers PID-Profilverwaltung aus den JSON-Dateien dabei weiterhin greift,
+          ist ungeprüft — die Zahlenwerte selbst bleiben unverändert (am 24.08.
+          nachgesehen). Beim ersten Druck danach die Düsentemperatur im Auge behalten.
+          Das Bett bleibt unberührt, dafür gibt es einen eigenen Schalter.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_hotend_control.cfg
+            [ -f /oem/printer_data/config/extended/klipper/kalico_mpc.cfg ] && { echo mpc; exit 0; }
+            [ -f "$f" ] || { echo pid; exit 0; }
+            grep -q 'control: *mpc' "$f" && echo mpc || echo pid_v
+        default: pid
+        options:
+          pid:
+            label: PID (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-hotend-control.sh pid &&
+                /etc/init.d/S60klipper restart
+          pid_v:
+            label: Velocity PID
+            confirm: "Alle vier Hotends auf Velocity PID umstellen? Danach einmal PID_CALIBRATE je Hotend fahren — die alten Werte passen nicht zwingend. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-hotend-control.sh pid_v &&
+                /etc/init.d/S60klipper restart
+          mpc:
+            label: MPC (modellbasiert)
+            confirm: "Alle vier Hotends auf MPC umstellen? Danach die Aktion „MPC kalibrieren“ fahren — unkalibriert schätzt MPC nur. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-hotend-control.sh mpc &&
+                /etc/init.d/S60klipper restart
+
+      bed_control:
+        label: Temperaturregelung des Betts
+        description: >-
+          Das Heizbett des U1 ist eine netzbetriebene Heizfolie unter einer schweren
+          Platte — es reagiert sehr träge, und genau das macht die Regelung heikel.
+          <br>„PID“ ist der bewährte Standard; er überschwingt beim Aufheizen etwas.
+          <br>„Velocity PID“ überschwingt weniger und passt gut zu trägen Heizungen,
+          braucht aber ein ruhiges Sensorsignal.
+          <br>„Zweipunkt“ schaltet stumpf ein und aus, sobald die Temperatur zwei Grad
+          unter oder über dem Sollwert liegt. Unkaputtbar, aber die Temperatur pendelt
+          dauerhaft — nur als Notlösung, wenn die PID-Werte nicht mehr stimmen.
+          <br>⚠⚠ An DIESEM Drucker lassen sich „Velocity PID“ und „Zweipunkt“ derzeit
+          nicht einschalten. In [heater_bed] steht Snapmakers eigene Option
+          ignore_pid_json, und die liest nur Kalicos PID-Klasse. Bei einem anderen
+          Verfahren bleibt sie ungelesen, und Klipper verweigert den Start mit
+          „Option 'ignore_pid_json' is not valid in section 'heater_bed'“. Der Schalter
+          prüft das vorher und verweigert den Wechsel, statt den Drucker lahmzulegen.
+          <br>⚠ Nach jedem erlaubten Wechsel PID_CALIBRATE HEATER=heater_bed TARGET=60
+          fahren.
+          <br>MPC gibt es fürs Bett bewusst nicht: es modelliert die Kühlung durch
+          Bauteillüfter und Filamentdurchsatz, und beides trifft aufs Bett nicht zu.
+          Kalicos Dual-Loop-PID scheidet ebenfalls aus — es bräuchte einen zweiten
+          Fühler direkt im Heizelement, und den hat der U1 nicht.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - bash
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_bed_control.cfg
+            [ -f "$f" ] || { echo pid; exit 0; }
+            grep -q 'control: *watermark' "$f" && echo watermark || echo pid_v
+        default: pid
+        options:
+          pid:
+            label: PID (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-bed-control.sh pid &&
+                /etc/init.d/S60klipper restart
+          pid_v:
+            label: Velocity PID
+            confirm: "Bett auf Velocity PID umstellen? Danach PID_CALIBRATE HEATER=heater_bed TARGET=60 fahren. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-bed-control.sh pid_v &&
+                /etc/init.d/S60klipper restart
+          watermark:
+            label: Zweipunkt (Notlösung)
+            confirm: "Bett auf Zweipunktregelung umstellen? Die Temperatur pendelt dann dauerhaft um ±2 Grad — das ist eine Notlösung, keine Verbesserung. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-bed-control.sh watermark &&
+                /etc/init.d/S60klipper restart
+
+      sdcard_subdirs:
+        label: Unterordner nach Druckdateien durchsuchen
+        description: >-
+          Klipper listet von sich aus nur Druckdateien, die direkt im obersten Ordner
+          liegen. Wer seine Projekte in Unterordnern sortiert, findet sie über die
+          Befehle M20/M23 und im Menü des Touchscreens deshalb nicht.
+          Eingeschaltet sucht Klipper auch in Unterordnern.
+          Betrifft die Weboberfläche Mainsail nicht — die zeigt Unterordner ohnehin,
+          weil sie über Moonraker geht und nicht über M20.
+          Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - sh
+          - -c
+          - '[ -f /oem/printer_data/config/extended/klipper/kalico_sdcard.cfg ] && echo an || echo aus'
+        default: aus
+        options:
+          aus:
+            label: Nur oberster Ordner (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-sdcard-subdirs.sh off &&
+                /etc/init.d/S60klipper restart
+          an:
+            label: Unterordner einschließen
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-sdcard-subdirs.sh on &&
+                /etc/init.d/S60klipper restart
+
+      log_umfang:
+        label: Umfang des Klipper-Protokolls
+        description: >-
+          Wieviel Klipper in seine Protokolldatei schreibt. Im Normalbetrieb landen dort
+          im Sekundentakt Statistikzeilen und bei jedem Start das komplette Bettraster —
+          das füllt die Datei schnell und macht das Suchen nach einer echten Fehlermeldung
+          mühsam. Kalico kann beides einzeln abschalten.
+          <br>„Vollständig“ ist der Auslieferungszustand und die richtige Wahl, solange etwas
+          untersucht wird — die Statistikzeilen enthalten die Systemlast, an der man
+          erkennt, ob der Rechner des Druckers überfordert ist.
+          <br>„Knapp“ schaltet Statistik und Bettraster-Protokollierung ab. Sinnvoll im
+          Alltagsbetrieb und wenn der Speicherplatz knapp wird.
+          Fehler und Warnungen werden in beiden Fällen unverändert protokolliert.
+          Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - sh
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_danger.cfg
+            grep -q '^log_statistics: *False' "$f" 2>/dev/null && echo knapp || echo voll
+        default: voll
+        options:
+          voll:
+            label: Vollständig (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh log_statistics -- &&
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh log_bed_mesh_at_startup -- &&
+                /etc/init.d/S60klipper restart
+          knapp:
+            label: Knapp
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh log_statistics False &&
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh log_bed_mesh_at_startup False &&
+                /etc/init.d/S60klipper restart
+
+      unbekannte_optionen:
+        label: Verhalten bei unbekannten Konfigurationsoptionen
+        description: >-
+          Was passieren soll, wenn in der Konfiguration eine Option steht, die Klipper
+          nicht kennt — etwa nach einem Tippfehler oder wenn eine Einstellung aus einer
+          neueren Kalico-Version stammt, die im laufenden Unterbau fehlt.
+          <br>„Abbrechen“ ist der Standard: Klipper startet gar nicht erst und nennt die
+          Zeile. Das ist streng, aber ehrlich — man merkt sofort, dass etwas nicht wirkt.
+          <br>„Nur warnen“ lässt Klipper trotzdem starten und schreibt eine Warnung ins
+          Protokoll.
+          <br>⚠ Das ist bequem beim Herumprobieren, aber gefährlich im Alltag: eine
+          Einstellung, die man für aktiv hält, wird stillschweigend übergangen — genau
+          die Sorte Fehler, die man erst am misslungenen Druck bemerkt.
+          Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - sh
+          - -c
+          - |
+            f=/oem/printer_data/config/extended/klipper/kalico_danger.cfg
+            grep -q '^error_on_unused_config_options: *False' "$f" 2>/dev/null && echo warnen || echo abbrechen
+        default: abbrechen
+        options:
+          abbrechen:
+            label: Abbrechen (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh error_on_unused_config_options -- &&
+                /etc/init.d/S60klipper restart
+          warnen:
+            label: Nur warnen
+            confirm: "Unbekannte Optionen künftig nur noch als Warnung behandeln? Klipper startet dann trotz Tippfehlern — die betroffene Einstellung wirkt aber nicht, ohne dass es auffällt. Klipper startet neu."
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-danger.sh error_on_unused_config_options False &&
+                /etc/init.d/S60klipper restart
+
+      shaper_mode:
+        label: Art des Schwingungsausgleichs
+        description: >-
+          Der Schwingungsausgleich („Input Shaper“) verformt jede Bewegung so, dass der
+          Rahmen möglichst wenig nachschwingt — das ist es, was Geisterbilder hinter
+          Kanten verhindert. Klassische Ausgleicher löschen eine einzelne Frequenz aus.
+          Kalicos weiche Ausgleicher decken stattdessen einen Frequenzbereich ab und
+          liefern meist sauberere Ecken, kosten dafür spürbar Rechenzeit auf dem
+          Drucker selbst.
+          <br>⚠ Der U1 rechnet auf einem Rockchip RK3562 (vier Kerne) und liegt damit unter
+          dem, was Kalico dafür empfiehlt. Nach dem Umschalten die Systemlast im
+          Protokoll beobachten („sysload“).
+          Dieser Schalter erscheint nur, wenn der laufende Kalico-Unterbau die weichen
+          Ausgleicher überhaupt mitbringt — im Hauptzweig fehlen sie, sie stecken im
+          Zweig bleeding_edge_v2.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh smooth_shaper
         get_cmd:
           - bash
           - -c
           - |
             f=/oem/printer_data/config/extended/klipper/kalico_shaper.cfg
-            if [ ! -f "$f" ]; then echo stock; exit 0; fi
+            if [ ! -f "$f" ]; then echo klassisch; exit 0; fi
             v=$(grep -m1 '^shaper_type' "$f" | awk '{print $2}')
             case "$v" in
               smooth_ei)       echo smooth_ei ;;
               smooth_2hump_ei) echo smooth_2hump_ei ;;
               smooth_mzv)      echo smooth_mzv ;;
-              *)               echo custom ;;
+              *)               echo eigen ;;
             esac
+        default: klassisch
         options:
-          stock:
-            label: Classic (stock)
+          klassisch:
+            label: Klassisch (Standard)
             cmd:
               - bash
               - -xc
               - |
                 rm -f /oem/printer_data/config/extended/klipper/kalico_shaper.cfg &&
-                echo "Back to the classic input shaper. Restarting Klipper..." &&
+                echo "Zurück zum klassischen Schwingungsausgleich. Klipper startet neu..." &&
                 /etc/init.d/S60klipper restart
           smooth_mzv:
             label: smooth_mzv (mild)
-            confirm: "Switch to the smooth_mzv input smoother? Lowest CPU cost of the smooth family. Klipper will restart."
+            confirm: "Auf den weichen Ausgleicher smooth_mzv umstellen? Von den weichen Varianten die rechensparsamste. Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -105,8 +478,8 @@ settings:
                 sh /usr/local/share/firmware-config/kalico/set-shaper.sh smooth_mzv &&
                 /etc/init.d/S60klipper restart
           smooth_ei:
-            label: smooth_ei (balanced)
-            confirm: "Switch to the smooth_ei input smoother? Good default of the smooth family. Klipper will restart."
+            label: smooth_ei (ausgewogen)
+            confirm: "Auf den weichen Ausgleicher smooth_ei umstellen? Guter Ausgangspunkt der weichen Varianten. Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -114,8 +487,8 @@ settings:
                 sh /usr/local/share/firmware-config/kalico/set-shaper.sh smooth_ei &&
                 /etc/init.d/S60klipper restart
           smooth_2hump_ei:
-            label: smooth_2hump_ei (widest)
-            confirm: "Switch to smooth_2hump_ei? Widest vibration cancelling, but the highest CPU cost - check sysload in klippy.log afterwards. Klipper will restart."
+            label: smooth_2hump_ei (breitester Bereich)
+            confirm: "Auf smooth_2hump_ei umstellen? Deckt den breitesten Frequenzbereich ab, kostet aber am meisten Rechenzeit — danach sysload im Protokoll prüfen. Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -124,13 +497,21 @@ settings:
                 /etc/init.d/S60klipper restart
 
       pa_model:
-        label: Pressure Advance Model
+        label: Modell für den Druckvorhalt (Pressure Advance)
         description: >-
-          Classic pressure advance assumes extruder pressure rises linearly with
-          flow rate. Kalico can use non-linear models instead, which track reality
-          better at high flow - relevant for the high-flow hotends. Calibrate with
-          the PA test tower (PA_TEST macro) after switching; the old PA value will
-          not carry over unchanged. Requires the Kalico tree to be active.
+          Der Druckvorhalt gleicht aus, dass geschmolzenes Filament in der Düse
+          nachdrückt und nachläuft: die Extruder-Bewegung wird der Kopfbewegung ein
+          Stück vorausgeschickt. Klassisch wird dabei angenommen, dass der Druck im
+          Hotend linear mit der Fördermenge steigt.
+          Kalico kann stattdessen nichtlineare Modelle verwenden, die der Wirklichkeit
+          bei hohem Durchsatz näher kommen — interessant für die High-Flow-Düsen, weil
+          ein Vorhalt, der bei langsamen Nähten passt, in schnellen Ecken zu klein ist.
+          <br>⚠ Nach dem Umschalten neu kalibrieren, der bisherige Zahlenwert gilt nicht
+          unverändert weiter.
+          Dieser Schalter erscheint nur, wenn der laufende Kalico-Unterbau die
+          nichtlinearen Modelle mitbringt — im Hauptzweig fehlen sie, sie stecken im
+          Zweig bleeding_edge_v2.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh pa_model
         get_cmd:
           - bash
           - -c
@@ -141,21 +522,22 @@ settings:
             case "$v" in
               tanh)   echo tanh ;;
               recipr) echo recipr ;;
-              *)      echo custom ;;
+              *)      echo eigen ;;
             esac
+        default: linear
         options:
           linear:
-            label: linear (stock)
+            label: linear (Standard)
             cmd:
               - bash
               - -xc
               - |
                 rm -f /oem/printer_data/config/extended/klipper/kalico_pa.cfg &&
-                echo "Back to linear pressure advance. Restarting Klipper..." &&
+                echo "Zurück zum linearen Druckvorhalt. Klipper startet neu..." &&
                 /etc/init.d/S60klipper restart
           tanh:
-            label: tanh (non-linear)
-            confirm: "Switch all four extruders to the tanh pressure advance model? You must re-run PA calibration afterwards. Klipper will restart."
+            label: tanh (nichtlinear)
+            confirm: "Alle vier Extruder auf das tanh-Modell umstellen? Der Druckvorhalt muss danach neu kalibriert werden. Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -163,8 +545,8 @@ settings:
                 sh /usr/local/share/firmware-config/kalico/set-pa-model.sh tanh &&
                 /etc/init.d/S60klipper restart
           recipr:
-            label: recipr (non-linear)
-            confirm: "Switch all four extruders to the recipr pressure advance model? You must re-run PA calibration afterwards. Klipper will restart."
+            label: recipr (nichtlinear)
+            confirm: "Alle vier Extruder auf das recipr-Modell umstellen? Der Druckvorhalt muss danach neu kalibriert werden. Klipper startet neu."
             cmd:
               - bash
               - -xc
@@ -172,39 +554,111 @@ settings:
                 sh /usr/local/share/firmware-config/kalico/set-pa-model.sh recipr &&
                 /etc/init.d/S60klipper restart
 
-      heater_control:
-        label: Hotend Temperature Control
+      testdrucke:
+        label: Testdrucke ohne Slicer
         description: >-
-          PID reacts to temperature error. MPC (Model Predictive Control) models the
-          hotend physically - heater power, block heat capacity, filament flow and
-          fan cooling - and predicts what it needs. It usually holds temperature far
-          better during flow and fan changes and needs no per-temperature tuning.
-          Values preset for the U1 hotends - 48 W ceramic heater, part cooling fan
-          per toolhead. ⚠ Run MPC_CALIBRATE HEATER=extruder (and extruder1..3) once
-          per hotend after switching; without calibration MPC uses rough estimates.
-          The bed stays on PID. Requires the Kalico tree to be active.
+          Schaltet zwei Kalibrier-Testkörper frei, die Kalico ohne Slicer direkt im
+          Drucker erzeugt. Danach erscheinen unter „Aktionen“ zwei zusätzliche Einträge.
+          <br>Der Vorteil gegenüber gesliceten Testdateien: Beschleunigung und
+          Druckvorhalt ändern sich WÄHREND des Drucks in sauber definierten Stufen. Bei
+          einer gesliceten Datei muss für jede Stufe ein eigenes Modell erzeugt werden,
+          und man vergleicht am Ende Ausdrucke miteinander statt Abschnitte eines
+          einzigen Turms.
+          <br>„Turm gegen Geisterbilder“ steigert die Beschleunigung alle 5 mm um
+          500 mm/s²; „Turm für den Druckvorhalt“ druckt jede Bahn mit drei
+          Geschwindigkeiten und erhöht den Vorhalt nach oben.
+          <br>Bettmitte und Modellgröße ermitteln die Module selbst aus der
+          Druckerkonfiguration.
+          <br>⚠ Die Testdrucke heizen nicht selbst und laden kein Filament — das ist vor
+          dem Start von Hand zu erledigen. Klipper startet beim Umschalten neu.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
+        get_cmd:
+          - sh
+          - -c
+          - '[ -f /oem/printer_data/config/extended/klipper/kalico_testtowers.cfg ] && echo an || echo aus'
+        default: aus
+        options:
+          aus:
+            label: Aus (Standard)
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-testtowers.sh off &&
+                /etc/init.d/S60klipper restart
+          an:
+            label: Freigeschaltet
+            cmd:
+              - bash
+              - -xc
+              - |
+                sh /usr/local/share/firmware-config/kalico/set-testtowers.sh on &&
+                /etc/init.d/S60klipper restart
+
+      pid_profil:
+        label: PID-Profil der Hotends
+        description: >-
+          Lädt einen gespeicherten Satz Regelwerte in alle vier Hotends.
+          <br>Warum es mehrere Sätze gibt: Die richtigen PID-Werte hängen von der
+          Zieltemperatur und von der Lüfterdrehzahl ab. Ein Satz, der bei 210 Grad mit
+          stehendem Lüfter stimmt, regelt bei 250 Grad und vollem Lüfter merklich
+          schlechter — bei PETG-Funktionsteilen mit 255 Grad also anders als bei PLA.
+          Kalico kann deshalb benannte Sätze vorhalten und im Betrieb umschalten.
+          <br>Ein neues Profil anlegen: erst PID_CALIBRATE HEATER=extruder
+          TARGET=&lt;Temperatur&gt; fahren, dann PID_PROFILE SAVE=&lt;name&gt;
+          HEATER=extruder, dann SAVE_CONFIG. Die angebotenen Materialnamen sind
+          Vorschläge — sie erscheinen erst dann, wenn sie auch angelegt wurden, sonst
+          meldet der Schalter, dass er sie nicht findet.
+          <br>⚠ Das Laden gilt nur bis zum nächsten Klipper-Neustart, danach ist wieder
+          „default“ aktiv. Dauerhaft wird es, wenn der Profilname im Startmakro des
+          Druckprofils geladen wird. Klipper wird hier NICHT neu gestartet.
+        if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh kalico
         get_cmd:
           - bash
           - -c
           - |
-            f=/oem/printer_data/config/extended/klipper/kalico_mpc.cfg
-            if [ -f "$f" ]; then echo mpc; else echo pid; fi
+            v=$(/usr/local/bin/curl -s "http://127.0.0.1:7125/printer/objects/query?extruder" 2>/dev/null \
+                | sed -e 's/.*"pid_profile": *"//' -e 's/".*//')
+            case "$v" in
+              default|pla|petg|abs) echo "$v" ;;
+              "")                   echo default ;;
+              *)                    echo eigen ;;
+            esac
+        default: default
         options:
-          pid:
-            label: PID (stock)
+          default:
+            label: default
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-pid-profile.sh
+              - default
+          pla:
+            label: pla
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-pid-profile.sh
+              - pla
+          petg:
+            label: petg
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-pid-profile.sh
+              - petg
+          abs:
+            label: abs
+            cmd:
+              - sh
+              - /usr/local/share/firmware-config/kalico/set-pid-profile.sh
+              - abs
+          eigen:
+            label: "Eigener Name…"
+            inputs:
+              - name: PID_PROFIL
+                label: "Name des gespeicherten Profils"
+                placeholder: "pla-highflow"
+                regex: '^[A-Za-z0-9_.-]{1,32}$'
             cmd:
               - bash
               - -xc
               - |
-                rm -f /oem/printer_data/config/extended/klipper/kalico_mpc.cfg &&
-                echo "Hotends back to PID. Restarting Klipper..." &&
-                /etc/init.d/S60klipper restart
-          mpc:
-            label: MPC (model predictive)
-            confirm: "Switch all four hotends to MPC? Remember to run MPC_CALIBRATE for each hotend afterwards - uncalibrated MPC only estimates. Klipper will restart."
-            cmd:
-              - bash
-              - -xc
-              - |
-                sh /usr/local/share/firmware-config/kalico/set-mpc.sh on &&
-                /etc/init.d/S60klipper restart
+                sh /usr/local/share/firmware-config/kalico/set-pid-profile.sh "${PID_PROFIL}"
