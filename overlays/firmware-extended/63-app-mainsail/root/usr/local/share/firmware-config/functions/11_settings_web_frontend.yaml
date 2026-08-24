@@ -2,19 +2,24 @@ links:
   web-interface:
     url: /
     icon: "🌐"
-    label: Web Interface
+    label: "Weboberfläche"
     condition: null
 
 settings:
   web:
     items:
       web-frontend:
-        label: Frontend
-        description: Choose between Fluidd and Mainsail as the web interface.
+        label: "Bedienoberfläche"
+        description: >-
+          Wählt, welche Bedienoberfläche unter der Adresse des Druckers erscheint.
+          <br>Beide zeigen dasselbe und sprechen über Moonraker mit Klipper; sie
+          unterscheiden sich in Aufbau und Bedienung. Mainsail gilt als aufgeräumter,
+          Fluidd bringt mehr Einstellmöglichkeiten mit. <br>⚠ Der Passwortschutz aus der
+          Sicherheitsgruppe funktioniert nur mit Fluidd.
         get_cmd: [/usr/local/bin/extended-config.py, get, /home/lava/printer_data/config/extended/extended2.cfg, web, frontend, fluidd]
         options:
           mainsail:
-            label: Mainsail
+            label: "Mainsail"
             cmd:
               - bash
               - -xc
@@ -23,7 +28,7 @@ settings:
                 /etc/init.d/S49nginx_conf restart &&
                 /usr/sbin/nginx -s reload
           fluidd:
-            label: Fluidd
+            label: "Fluidd"
             cmd:
               - bash
               - -xc

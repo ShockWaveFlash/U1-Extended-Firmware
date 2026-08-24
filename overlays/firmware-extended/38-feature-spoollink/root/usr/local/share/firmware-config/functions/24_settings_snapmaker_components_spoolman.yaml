@@ -2,8 +2,13 @@ settings:
   snapmaker_components:
     items:
       spoolman:
-        label: Spoolman Integration
-        description: Track filament usage and metadata with Spoolman spool management.
+        label: "Spulenverwaltung (Spoolman)"
+        description: >-
+          Verbindet den Drucker mit einem Spoolman-Server, der Buch über die
+          Filamentspulen führt: welches Material auf welcher Spule ist, wieviel noch
+          drauf ist und wieviel jeder Druck verbraucht hat. <br>Der Verbrauch wird nach
+          jedem Druck automatisch abgezogen. Der Server läuft nicht auf dem Drucker,
+          sondern im Netz. Klipper startet beim Umschalten neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/spoolman
         get_cmd:
           - bash
@@ -11,11 +16,14 @@ settings:
           - /usr/local/bin/extended-config.py get /oem/printer_data/config/extended/extended2.cfg spoolman host 2>/dev/null | grep -q . && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable Spoolman integration? Enter the Spoolman server URL below.\n\nSpoolman tracks filament usage and lets you manage spool metadata from your web frontend."
+            label: "Ein"
+            confirm: >-
+              Spulenverwaltung einschalten? Unten die Adresse des Spoolman-Servers
+              eintragen. Spoolman führt Buch über Filamentverbrauch und Spulendaten und
+              ist aus der Weboberfläche bedienbar.
             inputs:
               - name: SPOOLMAN_URL
-                label: Spoolman URL
+                label: "Adresse des Spoolman-Servers"
                 placeholder: "http://192.168.1.100:7912"
                 regex: "^https?://.+"
             cmd:
@@ -36,7 +44,7 @@ settings:
                 /etc/init.d/S60klipper restart
                 /etc/init.d/S61moonraker restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

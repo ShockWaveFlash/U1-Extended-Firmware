@@ -2,8 +2,12 @@ settings:
   web:
     items:
       firmware-config:
-        label: Firmware Config
-        description: Enable or disable this web configuration interface.
+        label: "Diese Konfigurationsseite"
+        description: >-
+          Schaltet diese Weboberfläche selbst ein oder aus. <br>⚠ Nach dem Abschalten
+          ist diese Seite nicht mehr erreichbar — sie lässt sich dann nur wieder
+          aktivieren, indem man die Datei extended2.cfg von Hand bearbeitet, also über
+          SSH oder den Touchscreen.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -13,7 +17,7 @@ settings:
           - "true"
         options:
           "true":
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -21,8 +25,10 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg web firmware_config true &&
                 /etc/init.d/S99firmware-config restart
           "false":
-            label: Disabled
-            confirm: Disabling will remove access to this page. Re-enabling requires editing extended2.cfg manually.
+            label: "Aus"
+            confirm: >-
+              Abschalten nimmt den Zugang zu dieser Seite. Wieder einschalten geht dann
+              nur noch, indem extended2.cfg von Hand bearbeitet wird.
             cmd:
               - bash
               - -xc

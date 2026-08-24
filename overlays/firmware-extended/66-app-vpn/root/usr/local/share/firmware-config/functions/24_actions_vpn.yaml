@@ -2,23 +2,28 @@ quick_actions:
   upgrades:
     items:
       tailscale-upgrade:
-        label: Upgrade Tailscale
-        description: Download and install the latest pinned Tailscale version.
+        label: "Tailscale aktualisieren"
+        description: >-
+          Lädt die in dieser Firmware hinterlegte Fassung von Tailscale herunter und
+          installiert sie. <br>⚠ Es wird eine FEST VORGEGEBENE Version geladen, nicht
+          die jeweils neueste — ein neuerer Stand kommt erst mit einem Firmware-Update.
         if_cmd: /usr/local/bin/extended-pkg tailscale needs_upgrade
-        confirm: "Upgrade Tailscale and restart the VPN service?"
+        confirm: "Tailscale aktualisieren und den VPN-Dienst neu starten?"
         cmd:
           - bash
           - -ec
           - |
             /usr/local/bin/extended-pkg tailscale upgrade
             /etc/init.d/S99vpn restart
-        message: "Upgrading Tailscale..."
+        message: "Tailscale wird aktualisiert…"
 
 actions:
   troubleshooting:
     items:
       tailscale-status:
-        label: Tailscale Status
-        description: Show current Tailscale connection status and IP address.
+        label: "Tailscale-Zustand"
+        description: >-
+          Zeigt, ob die VPN-Verbindung steht, und unter welcher Adresse der Drucker im
+          VPN erreichbar ist.
         cmd: [/usr/local/bin/tailscale, status]
-        message: "Checking Tailscale status..."
+        message: "Tailscale-Zustand wird abgefragt…"

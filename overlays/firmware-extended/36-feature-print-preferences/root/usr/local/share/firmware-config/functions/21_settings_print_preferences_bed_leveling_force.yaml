@@ -2,8 +2,15 @@ settings:
   print_preferences:
     items:
       bed_leveling_force:
-        label: Force Bed Mesh Calibration
-        description: Forces bed mesh calibration before each print.
+        label: "Bettvermessung vor jedem Druck erzwingen"
+        description: >-
+          Erzwingt, dass der Drucker vor jedem Druck das Bett neu vermisst, unabhängig
+          davon, was im Druckprofil steht. <br>Der Sinn: Das Bett verzieht sich mit der
+          Temperatur, und ein Raster von gestern passt nach dem Aufheizen nicht mehr
+          genau. <br>„Vollständig“ tastet die ganze Fläche ab. „Angepasst“ vermisst nur
+          den Bereich, in dem tatsächlich gedruckt wird — schneller, setzt aber voraus,
+          dass der Slicer die Objektgrenzen mitliefert. Klipper startet beim Umschalten
+          neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/tweaks#force-auto-bed-leveling
         get_cmd:
           - bash
@@ -18,8 +25,8 @@ settings:
             fi
         options:
           force:
-            label: Force Full Mesh
-            confirm: "Force full bed mesh calibration before every print?"
+            label: "Vollständig vermessen"
+            confirm: "Vor jedem Druck das ganze Bett vermessen?"
             cmd:
               - bash
               - -xc
@@ -30,8 +37,12 @@ settings:
                 echo "Force full bed mesh enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           adaptive:
-            label: Force Adaptive Mesh
-            confirm: "Force adaptive bed mesh calibration before every print? Falls back to full mesh when exclude_object is not active. Make sure to enable 'Exclude Object' in your slicer so Klipper receives object boundary data — without it, adaptive mesh always falls back to a full mesh."
+            label: "Angepasst vermessen"
+            confirm: >-
+              Vor jedem Druck nur den bedruckten Bereich vermessen? ⚠ Ohne Objektgrenzen
+              fällt der Drucker auf die vollständige Vermessung zurück. Dafür muss im
+              Slicer „Objekte ausschließen“ (Exclude Object) eingeschaltet sein — sonst
+              greift die Anpassung nie.
             cmd:
               - bash
               - -xc
@@ -42,7 +53,7 @@ settings:
                 echo "Force adaptive bed mesh enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

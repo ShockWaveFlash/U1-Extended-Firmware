@@ -4,8 +4,10 @@ settings:
       rfid:
         options:
           openrfid:
-            label: OpenRFID
-            confirm: Please read the relevant documentation for this feature. Bambu Lab and Creality spools are not enabled by default.
+            label: "OpenRFID"
+            confirm: >-
+              Bitte vorher die Dokumentation zu dieser Funktion lesen. Spulen von Bambu
+              Lab und Creality sind nicht von vornherein freigeschaltet.
             cmd:
               - bash
               - -xc
@@ -16,8 +18,10 @@ settings:
                 /etc/init.d/S99openrfid restart
                 /etc/init.d/S60klipper restart
           openrfid-generic:
-            label: OpenRFID (force generic vendor)
-            confirm: Please read the relevant documentation for this feature. Bambu Lab and Creality spools are not enabled by default.
+            label: "OpenRFID (alle Spulen als allgemein behandeln)"
+            confirm: >-
+              Bitte vorher die Dokumentation zu dieser Funktion lesen. Spulen von Bambu
+              Lab und Creality sind nicht von vornherein freigeschaltet.
             cmd:
               - bash
               - -xc

@@ -2,7 +2,7 @@ links:
   detect-http:
     url: /detect-http/
     icon: "🤖"
-    label: AI Detection
+    label: "KI-Erkennung"
     condition:
       setting: camera-internal
       value: paxx12-ai
@@ -13,8 +13,13 @@ settings:
       camera-internal:
         options:
           paxx12-ai:
-            label: Paxx12 AI (Experimental)
-            confirm: This will enable custom AI detection algorithm, the AI might produce false output as result.
+            label: "Paxx12-KI (erprobend)"
+            confirm: >-
+              Schaltet die eigene KI-Fehlererkennung ein. Sie sieht das Kamerabild durch
+              und schlägt Alarm, wenn der Druck aus dem Ruder läuft — etwa beim
+              „Spaghetti“-Fehler, wenn sich das Werkstück gelöst hat und die Düse ins
+              Leere fördert. ⚠ Erprobend: Fehlalarme und übersehene Fehler sind möglich,
+              sie ersetzt kein Hinsehen.
             hidden: true
             cmd:
               - bash

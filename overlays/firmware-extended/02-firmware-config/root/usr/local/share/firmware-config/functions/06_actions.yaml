@@ -1,13 +1,13 @@
 quick_actions:
   upgrades:
-    label: Upgrades
+    label: "Aktualisierungen"
 
 actions:
   troubleshooting:
-    label: Troubleshooting
+    label: "Fehlersuche"
   recovery:
-    label: Recovery
+    label: "Wiederherstellung"
   services:
-    label: Services
+    label: "Dienste"
   system:
-    label: System
+    label: "System"

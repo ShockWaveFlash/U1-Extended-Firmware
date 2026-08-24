@@ -2,8 +2,12 @@ settings:
   monitoring_debugging:
     items:
       klipper-metrics:
-        label: Klipper Metrics Exporter
-        description: Export Klipper metrics for scraping by Prometheus.
+        label: "Messwerte für Prometheus"
+        description: >-
+          Stellt Betriebswerte des Druckers in dem Format bereit, das die
+          Überwachungssoftware Prometheus abholt — Temperaturen, Druckfortschritt,
+          Systemlast. <br>Damit lassen sich Verläufe über Wochen aufzeichnen und in
+          Grafana darstellen. Für den normalen Betrieb nicht nötig.
         get_cmd:
           - bash
           - -c
@@ -12,7 +16,7 @@ settings:
             [ -n "$val" ] && echo "true" || echo "false"
         options:
           "true":
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -21,7 +25,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg monitoring klipper_exporter ":9101" &&
                 /etc/init.d/S99prometheus-klipper-exporter restart
           "false":
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

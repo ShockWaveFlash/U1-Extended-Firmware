@@ -2,16 +2,25 @@ settings:
   remote_access:
     items:
       authorization:
-        label: Web Authentication (Experimental)
-        description: Password-protect access to Fluidd and Firmware Config via Moonraker authentication.
+        label: "Passwortschutz der Weboberfläche (erprobend)"
+        description: >-
+          Schützt den Zugang zur Weboberfläche und zu dieser Konfigurationsseite mit
+          einem Passwort, geprüft von Moonraker. <br>Ohne diesen Schutz kann jeder im
+          selben Netz den Drucker steuern, Dateien hochladen und Heizungen einschalten.
+          <br>⚠ Erprobend, und es funktioniert nur mit der Oberfläche Fluidd — Mainsail
+          unterstützt diese Anmeldung nicht. Wer Mainsail benutzt, sperrt sich damit
+          unter Umständen selbst aus.
         get_cmd:
           - bash
           - -c
           - test -f /oem/printer_data/config/extended/moonraker/authorization.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable authentication? A new admin user with random password will be created. You will need to log in to access Fluidd and Firmware Config. Note: This is experimental and only works with Fluidd. Mainsail does not support this feature."
+            label: "Ein"
+            confirm: >-
+              Passwortschutz einschalten? Es wird ein Verwalterkonto mit zufälligem
+              Passwort angelegt, mit dem man sich künftig anmelden muss. ⚠ Erprobend und
+              nur mit Fluidd nutzbar — Mainsail unterstützt das nicht.
             cmd:
               - bash
               - -c
@@ -63,8 +72,10 @@ settings:
                   echo "$RESULT"
                 fi
           disabled:
-            label: Disabled
-            confirm: "Disable authentication? Anyone on your network will be able to access the printer."
+            label: "Aus"
+            confirm: >-
+              Passwortschutz abschalten? Danach kann jeder im selben Netz den Drucker
+              bedienen.
             cmd:
               - bash
               - -xc

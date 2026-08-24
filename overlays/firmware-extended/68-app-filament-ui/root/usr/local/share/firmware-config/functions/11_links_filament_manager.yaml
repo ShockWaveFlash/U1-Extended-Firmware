@@ -2,5 +2,5 @@ links:
   filament-manager:
     url: /filament/
     icon: "🏷️"
-    label: Filament Manager
+    label: "Filamentverwaltung"
     condition: null

@@ -2,31 +2,49 @@ actions:
   troubleshooting:
     items:
       show-status:
-        label: Show MCUs Version
-        description: Display firmware version of all connected MCUs.
+        label: "Firmware-Stände der Mikrocontroller"
+        description: >-
+          Zeigt, welche Firmware auf jedem der angeschlossenen Mikrocontroller läuft —
+          die Hauptplatine, die vier Werkzeugköpfe und ein etwaiger Zusatzrechner.
+          <br>Nützlich nach einem Firmware-Wechsel: Bleibt ein Kopf auf einem älteren
+          Stand, meldet Klipper beim Start Unstimmigkeiten, und man sucht den Fehler
+          sonst an der falschen Stelle.
         cmd:
           - /home/lava/bin/systemUpgrade.sh
           - show-status
         background: false
-        message: "System status:"
+        message: "Systemzustand:"
 
       collect-logs:
-        label: Collect System Logs
-        description: Bundle and download a system log archive for troubleshooting.
-        confirm: "Collecting system logs might take a few minutes. These logs contain sensitive information like the serial number and Wi-Fi SSID, and should not be shared publicly. Continue?"
+        label: "Systemprotokolle einsammeln"
+        description: >-
+          Packt alle Protokolldateien in ein Archiv zum Herunterladen — die Grundlage
+          für jede Fehlersuche, eigene wie fremde. <br>⚠ Das Archiv enthält die
+          Seriennummer des Geräts und den Namen des WLANs. Vor dem Weitergeben in ein
+          Forum also durchsehen.
+        confirm: >-
+          Das Einsammeln dauert einige Minuten. Die Protokolle enthalten Angaben wie
+          Seriennummer und WLAN-Name und sollten nicht ungeprüft öffentlich geteilt
+          werden. Fortfahren?
         cmd:
           - /home/lava/bin/sysinfoCollection.sh
           - "no"
           - /userdata/logs.tar.gz
-        message: "Collecting system logs..."
+        message: "Protokolle werden eingesammelt…"
         download_file: /userdata/logs.tar.gz
 
   recovery:
     items:
       reset-extended-to-defaults:
-        label: Reset Extended to Defaults
-        description: Clear all extended settings and reboot to a clean state.
-        confirm: "Reset all extended settings to defaults and reboot?"
+        label: "Erweiterte Einstellungen zurücksetzen"
+        description: >-
+          Setzt sämtliche Einstellungen dieser Oberfläche zurück und startet den Drucker
+          neu. Die Erweiterungen sind danach im Auslieferungszustand. <br>Der Weg, wenn
+          eine Einstellung den Drucker unbrauchbar gemacht hat und man nicht weiß,
+          welche. <br>⚠ Betrifft nur die Erweiterungen — Klipper-Konfiguration und
+          Druckdateien bleiben. ⚠ Löscht auch die Markierung, die den Overlay-Reset
+          abschaltet.
+        confirm: "Alle erweiterten Einstellungen zurücksetzen und neu starten?"
         background: true
         cmd:
           - /bin/bash
@@ -35,12 +53,20 @@ actions:
             rm -f /oem/.printer_data /oem/.debug &&
             touch /oem/.extended-recover &&
             /sbin/reboot
-        message: "Resetting extended to defaults..."
+        message: "Einstellungen werden zurückgesetzt…"
 
       reset-to-backup-firmware:
-        label: Reset Extended to Backup Firmware
-        description: Clear all extended settings, switch to the backup firmware slot, and reboot.
-        confirm: "Reset all extended settings to defaults, switch to backup firmware and reboot?"
+        label: "Zurücksetzen und auf die zweite Firmware wechseln"
+        description: >-
+          Setzt alle Einstellungen dieser Oberfläche zurück UND startet von der zweiten
+          Firmware. <br>Der Drucker hält zwei Firmware-Stände nebeneinander vor. Ein
+          Update schreibt immer in den gerade ungenutzten Platz — der vorherige Stand
+          bleibt also erhalten. Dieser Eintrag ist die Notbremse, wenn ein Update den
+          Drucker unbrauchbar gemacht hat. <br>⚠ Der zweite Platz enthält den Stand VOR
+          dem letzten Update; alles seither Eingerichtete fehlt dort.
+        confirm: >-
+          Alle erweiterten Einstellungen zurücksetzen, auf die zweite Firmware wechseln
+          und neu starten?
         background: true
         cmd:
           - /bin/bash
@@ -49,12 +75,16 @@ actions:
             rm -f /oem/.printer_data /oem/.debug &&
             touch /oem/.extended-recover &&
             updateEngine --misc=other --reboot
-        message: "Resetting to backup firmware..."
+        message: "Es wird auf die zweite Firmware zurückgesetzt…"
 
       switch-to-backup-firmware:
-        label: Switch to Backup Firmware
-        description: Boot from the backup firmware slot on next reboot.
-        confirm: "Switch to backup firmware and reboot?"
+        label: "Auf die zweite Firmware wechseln"
+        description: >-
+          Startet beim nächsten Neustart von der zweiten Firmware, ohne Einstellungen zu
+          löschen. <br>Der Drucker hält zwei Firmware-Stände nebeneinander; dieser
+          Eintrag wechselt zwischen ihnen. Der Weg zurück führt über denselben Eintrag.
+          <br>⚠ Der zweite Platz enthält den Stand VOR dem letzten Update.
+        confirm: "Auf die zweite Firmware wechseln und neu starten?"
         background: true
         cmd:
           - /bin/bash
@@ -62,4 +92,4 @@ actions:
           - |
             rm -f /oem/.printer_data /oem/.debug &&
             updateEngine --misc=other --reboot
-        message: "Switching to backup firmware..."
+        message: "Es wird auf die zweite Firmware gewechselt…"

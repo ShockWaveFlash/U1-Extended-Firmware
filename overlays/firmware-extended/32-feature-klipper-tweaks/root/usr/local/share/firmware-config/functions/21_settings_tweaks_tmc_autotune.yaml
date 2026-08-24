@@ -2,8 +2,13 @@ settings:
   tweaks:
     items:
       tmc_autotune:
-        label: TMC AutoTune
-        description: Optimizes TMC2240 driver settings for quieter operation and better performance.
+        label: "Treiber-Selbstabstimmung (feste Werte)"
+        description: >-
+          Stellt die Schrittmotortreiber auf leiseren und gleichmäßigeren Lauf ein — mit
+          festen Werten, die auf die WERKSMOTOREN abgestimmt sind. <br>⚠ Nach einem
+          Motorumbau ist stattdessen die Selbstabstimmung aus der Motordatenbank die
+          richtige Wahl (unter „XY-Motorumbau“); beide gleichzeitig ergeben keinen Sinn.
+          Klipper startet beim Umschalten neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/tweaks#tmc-autotune
         get_cmd:
           - bash
@@ -11,8 +16,11 @@ settings:
           - test -f /oem/printer_data/config/extended/klipper/tmc_autotune.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable TMC AutoTune? This optimizes TMC2240 driver settings for quieter operation and better performance. Monitor motor temperatures, print quality, and skipped steps during first use."
+            label: "Ein"
+            confirm: >-
+              Treiber-Selbstabstimmung mit festen Werten einschalten? Beim ersten
+              Einsatz Motortemperaturen, Druckbild und mögliche verlorene Schritte
+              beobachten.
             cmd:
               - bash
               - -xc
@@ -21,7 +29,7 @@ settings:
                 echo "TMC AutoTune enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

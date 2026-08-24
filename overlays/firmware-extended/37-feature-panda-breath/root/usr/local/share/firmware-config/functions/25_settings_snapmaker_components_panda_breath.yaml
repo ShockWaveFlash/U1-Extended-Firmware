@@ -2,8 +2,19 @@ settings:
   snapmaker_components:
     items:
       panda_breath:
-        label: Panda Breath Chamber Heater
-        description: BIQU Panda Breath chamber heater and air filter integration.
+        label: "Panda Breath (Innenraumheizung)"
+        description: >-
+          Bindet die Innenraumheizung mit Luftfilter von BIQU ein. Sie erwärmt den
+          Bauraum und filtert die Abluft. <br>Wozu: ABS, ASA und PC schrumpfen beim
+          Abkühlen stark. In kalter Umgebung reißen die Schichten auf oder das Werkstück
+          löst sich an den Ecken vom Bett. Ein warmer Innenraum verlangsamt das Abkühlen
+          und verhindert das. <br>⚠⚠ Der Preis ist Verschleiß: Die Elektronik des
+          Druckers sitzt im selben Gehäuse und ist für diese Dauertemperaturen nicht
+          ausgelegt. Ohne zusätzliche Kühlung der Hauptplatine darf die Heizung nicht
+          laufen. <br>⚠ Der Druckerraum hat kein Fenster — ABS und ASA nur bei guter
+          Lüftung drucken. <br>⚠ Der Drucker spricht das Gerät über seine Netzadresse
+          an; beide Adressen müssen im Router festgeschrieben sein, sonst findet Klipper
+          die Heizung nach einem Neustart nicht mehr.
         help_url: https://snapmakeru1-extended-firmware.pages.dev/panda_breath
         get_cmd:
           - bash
@@ -20,7 +31,7 @@ settings:
             fi
         options:
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -ec
@@ -39,27 +50,35 @@ settings:
                 echo ">> Panda Breath disabled. Restarting Klipper..."
                 /etc/init.d/S60klipper restart
           auto:
-            label: Auto (Recommended)
-            confirm: |
-              WARNING: Panda Breath significantly raises sustained enclosure temperatures, accelerating wear on electronics, motors, and other components beyond their rated conditions. Any damage attributable to elevated thermal stress is unlikely to be covered under warranty. Additional motherboard cooling is required before use — see the documentation for details.
-
-              Before enabling Panda Breath auto mode, complete all of the following steps:
-
-              1. Install additional active cooling on the motherboard (see documentation).
-              2. Ensure the Panda Breath device is running firmware v1.0.3.
-              3. Configure a static DHCP lease for this printer on your router — the printer IP is embedded into the Panda Breath device and must not change after a reboot.
-              4. Configure a static DHCP lease for the Panda Breath device on your router — Klipper will connect to it by IP address on every print.
-              5. Power-cycle the Panda Breath device and wait at least 5 seconds before proceeding.
-              6. Enter the Panda Breath IP address in the field below.
-
-              Auto mode heats the chamber with Klipper first, then hands off hold and cool-down behaviour to Panda native auto mode.
+            label: "Automatik (empfohlen)"
+            confirm: >-
+              ⚠⚠ Panda Breath hält den Innenraum dauerhaft deutlich wärmer. Elektronik,
+              Motoren und Kunststoffteile arbeiten dann jenseits dessen, wofür sie
+              ausgelegt sind, und altern schneller. Schäden durch diese Wärmebelastung
+              sind vermutlich kein Garantiefall. Vor dem Einsatz MUSS die Hauptplatine
+              zusätzlich gekühlt werden — Näheres in der Dokumentation. Vor dem
+              Einschalten der Betriebsart „Automatik“ alle folgenden Schritte erledigen:
+              1. Zusätzliche aktive Kühlung an der Hauptplatine anbringen. 2.
+              Sicherstellen, dass auf dem Panda-Breath-Gerät die Firmware 1.0.3 läuft.
+              3. Im Router eine feste Adresse für DIESEN DRUCKER vergeben — seine
+              Adresse wird im Panda-Breath-Gerät hinterlegt und darf sich nach einem
+              Neustart nicht ändern. 4. Im Router auch für das Panda-Breath-Gerät eine
+              feste Adresse vergeben — Klipper spricht es bei jedem Druck über die
+              Adresse an. 5. Das Panda-Breath-Gerät stromlos machen und mindestens 5
+              Sekunden warten. 6. Unten die Adresse des Panda-Breath-Geräts eintragen.
+              In der Automatik heizt zunächst Klipper den Innenraum auf; das Halten der
+              Temperatur und das Abkühlen übernimmt danach die Eigenautomatik des
+              Geräts.
             inputs:
               - name: ACKNOWLEDGED
-                label: "Type \"I UNDERSTAND\" to confirm you have read the documentation and accept the warranty and longevity risks"
+                label: >-
+                  Zum Bestätigen I UNDERSTAND eintippen — damit wird bestätigt, dass die
+                  Dokumentation gelesen wurde und die Risiken für Garantie und
+                  Lebensdauer angenommen werden
                 placeholder: "I UNDERSTAND"
                 regex: '^I UNDERSTAND$'
               - name: PANDA_BREATH_IP
-                label: Panda Breath IP Address
+                label: "Netzadresse des Panda-Breath-Geräts"
                 placeholder: "192.168.1.100"
                 regex: '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'
             cmd:
@@ -87,28 +106,36 @@ settings:
                 echo ">> Panda Breath auto mode enabled. Restarting Klipper..."
                 /etc/init.d/S60klipper restart
           manual:
-            label: Manual (Advanced)
+            label: "Von Hand (für Fortgeschrittene)"
             hidden: true
-            confirm: |
-              WARNING: Panda Breath significantly raises sustained enclosure temperatures, accelerating wear on electronics, motors, and other components beyond their rated conditions. Any damage attributable to elevated thermal stress is unlikely to be covered under warranty. Additional motherboard cooling is required before use — see the documentation for details.
-
-              Before enabling Panda Breath manual mode, complete all of the following steps:
-
-              1. Install additional active cooling on the motherboard (see documentation).
-              2. Ensure the Panda Breath device is running firmware v1.0.3.
-              3. Configure a static DHCP lease for this printer on your router — the printer IP is embedded into the Panda Breath device and must not change after a reboot.
-              4. Configure a static DHCP lease for the Panda Breath device on your router — Klipper will connect to it by IP address on every print.
-              5. Power-cycle the Panda Breath device and wait at least 5 seconds before proceeding.
-              6. Enter the Panda Breath IP address in the field below.
-
-              Manual mode is a legacy fallback that may be less safe if the device or network connectivity is lost during a print.
+            confirm: >-
+              ⚠⚠ Panda Breath hält den Innenraum dauerhaft deutlich wärmer. Elektronik,
+              Motoren und Kunststoffteile arbeiten dann jenseits dessen, wofür sie
+              ausgelegt sind, und altern schneller. Schäden durch diese Wärmebelastung
+              sind vermutlich kein Garantiefall. Vor dem Einsatz MUSS die Hauptplatine
+              zusätzlich gekühlt werden — Näheres in der Dokumentation. Vor dem
+              Einschalten der Betriebsart „Von Hand“ alle folgenden Schritte erledigen:
+              1. Zusätzliche aktive Kühlung an der Hauptplatine anbringen. 2.
+              Sicherstellen, dass auf dem Panda-Breath-Gerät die Firmware 1.0.3 läuft.
+              3. Im Router eine feste Adresse für DIESEN DRUCKER vergeben — seine
+              Adresse wird im Panda-Breath-Gerät hinterlegt und darf sich nach einem
+              Neustart nicht ändern. 4. Im Router auch für das Panda-Breath-Gerät eine
+              feste Adresse vergeben — Klipper spricht es bei jedem Druck über die
+              Adresse an. 5. Das Panda-Breath-Gerät stromlos machen und mindestens 5
+              Sekunden warten. 6. Unten die Adresse des Panda-Breath-Geräts eintragen. ⚠
+              Die Betriebsart „Von Hand“ ist ein Überbleibsel aus früheren Fassungen.
+              Sie ist weniger sicher: Fällt das Gerät oder die Netzverbindung während
+              eines Drucks aus, bemerkt der Drucker das nicht zuverlässig.
             inputs:
               - name: ACKNOWLEDGED
-                label: "Type \"I UNDERSTAND\" to confirm you have read the documentation and accept the warranty and longevity risks"
+                label: >-
+                  Zum Bestätigen I UNDERSTAND eintippen — damit wird bestätigt, dass die
+                  Dokumentation gelesen wurde und die Risiken für Garantie und
+                  Lebensdauer angenommen werden
                 placeholder: "I UNDERSTAND"
                 regex: '^I UNDERSTAND$'
               - name: PANDA_BREATH_IP
-                label: Panda Breath IP Address
+                label: "Netzadresse des Panda-Breath-Geräts"
                 placeholder: "192.168.1.100"
                 regex: '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'
             cmd:

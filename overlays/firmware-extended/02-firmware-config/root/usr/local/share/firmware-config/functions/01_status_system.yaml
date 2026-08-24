@@ -2,13 +2,13 @@ status:
   version:
     title: System Information
     items:
-      - label: Base
+      - label: "Grundlage"
         cmd: cat /etc/FULLVERSION
-      - label: Version
+      - label: "Version"
         cmd: cat /etc/BUILD_VERSION
-      - label: Profile
+      - label: "Profil"
         cmd: cat /etc/BUILD_PROFILE
-      - label: Active Firmware
+      - label: "Aktive Firmware"
         cmd: "awk '/android.*slot.*=/{gsub(/.*=/,\"\"); print ($0==\"_a\")?\"A\":\"B\"}' /proc/cmdline"
-      - label: Device Name
+      - label: "Gerätename"
         cmd: cat /home/lava/printer_data/.device_name

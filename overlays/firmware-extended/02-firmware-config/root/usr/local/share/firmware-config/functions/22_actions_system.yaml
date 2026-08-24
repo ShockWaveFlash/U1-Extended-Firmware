@@ -2,10 +2,15 @@ actions:
   system:
     items:
       reboot-system:
-        label: Reboot System
-        description: Reboot the printer system.
-        confirm: true
+        label: "Drucker neu starten"
+        description: >-
+          Startet den gesamten Drucker neu, also auch das Betriebssystem. <br>⚠⚠ Beim
+          Neustart wird das Wurzeldateisystem geleert: alles, was seit dem letzten
+          Firmware-Update von Hand nach /etc, /usr oder /home geschrieben wurde, ist
+          danach weg. Dauerhaft sind nur /oem und /userdata. <br>⚠ Ein laufender Druck
+          wird abgebrochen.
+        confirm: "Den ganzen Drucker neu starten? Ein laufender Druck wird abgebrochen. Beim Neustart wird ausserdem das Wurzeldateisystem geleert - von Hand angelegte Dateien ausserhalb von /oem und /userdata sind danach weg."
         cmd:
           - /sbin/reboot
         background: true
-        message: "Rebooting system..."
+        message: "Der Drucker wird neu gestartet…"

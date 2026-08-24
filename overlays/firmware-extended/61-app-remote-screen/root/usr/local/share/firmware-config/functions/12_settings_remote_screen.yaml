@@ -2,7 +2,7 @@ links:
   remote-screen:
     url: /screen
     icon: "🖥️"
-    label: Remote Screen
+    label: "Touchscreen im Browser"
     condition:
       setting: remote-screen
       value: "true"
@@ -11,8 +11,11 @@ settings:
   web:
     items:
       remote-screen:
-        label: Remote Screen
-        description: Stream the printer touchscreen to the browser.
+        label: "Touchscreen im Browser"
+        description: >-
+          Überträgt das Bild des Touchscreens in den Browser und macht ihn dort
+          bedienbar. <br>Praktisch für alles, was nur am Gerät geht — etwa die
+          WLAN-Eingabe oder Menüs, die es in der Weboberfläche nicht gibt.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -22,7 +25,7 @@ settings:
           - "false"
         options:
           "true":
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -33,7 +36,7 @@ settings:
                 /etc/init.d/S99fb-http restart &&
                 /etc/init.d/S61moonraker restart
           "false":
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

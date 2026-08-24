@@ -2,8 +2,13 @@ settings:
   snapmaker_components:
     items:
       afc:
-        label: AFC Lite via Fluidd/Mainsail
-        description: Multi-lane filament management with CHANGE_TOOL and LANE_UNLOAD macros.
+        label: "AFC Lite (Mehrspulen-Verwaltung)"
+        description: >-
+          Bindet die Mehrspulen-Verwaltung AFC Lite ein und stellt die Befehle
+          CHANGE_TOOL und LANE_UNLOAD bereit. <br>Gedacht für angebaute Spulenwechsler
+          mit mehreren Zuführungen. ⚠ Der U1 hat sein eigenes Werkzeugsystem mit vier
+          Köpfen und braucht das im Normalfall nicht. Klipper startet beim Umschalten
+          neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/afc-lite
         get_cmd:
           - bash
@@ -11,8 +16,10 @@ settings:
           - test -f /oem/printer_data/config/extended/klipper/afc.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable AFC Lite component? This adds support for multi-lane filament management with CHANGE_TOOL and LANE_UNLOAD macros. See documentation for details."
+            label: "Ein"
+            confirm: >-
+              AFC Lite einschalten? Fügt die Mehrspulen-Verwaltung mit den Befehlen
+              CHANGE_TOOL und LANE_UNLOAD hinzu. Näheres in der Dokumentation.
             cmd:
               - bash
               - -xc
@@ -21,7 +28,7 @@ settings:
                 echo "AFC enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

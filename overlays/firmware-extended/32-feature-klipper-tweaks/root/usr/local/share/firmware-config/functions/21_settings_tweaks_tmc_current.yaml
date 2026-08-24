@@ -2,8 +2,12 @@ settings:
   tweaks:
     items:
       tmc_reduce_current:
-        label: TMC Reduced Current
-        description: Lowers X/Y motor current from 1.2A to 1.0A for quieter operation and less heat.
+        label: "Verringerter TMC-Strom"
+        description: >-
+          Senkt den Fahrstrom der X- und Y-Motoren von 1,2 A auf 1,0 A. Leiser und
+          kühler, dafür weniger Drehmoment — unter Last können Schritte verlorengehen,
+          was sich als versetzte Schichten zeigt. <br>⚠ Wird von einer eigenen Stromwahl
+          unter „XY-Motorumbau“ überschrieben. Klipper startet beim Umschalten neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/tweaks#tmc-reduced-current
         get_cmd:
           - bash
@@ -11,8 +15,11 @@ settings:
           - test -f /oem/printer_data/config/extended/klipper/tmc_current.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable TMC Reduced Current? This lowers X/Y motor current from 1.2A to 1.0A for quieter operation and less heat. Monitor motor temperatures and print quality after enabling."
+            label: "Ein"
+            confirm: >-
+              Verringerten Motorstrom einschalten? Senkt X/Y von 1,2 A auf 1,0 A. Danach
+              Motortemperaturen und Druckbild beobachten, besonders auf versetzte
+              Schichten.
             cmd:
               - bash
               - -xc
@@ -21,7 +28,7 @@ settings:
                 echo "TMC Reduced Current enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

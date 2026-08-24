@@ -2,8 +2,15 @@ settings:
   remote_access:
     items:
       ssh:
-        label: SSH Access
-        description: Enable remote shell access to the printer over SSH.
+        label: "SSH-Zugang"
+        description: >-
+          Öffnet eine Kommandozeile auf dem Drucker über das Netz. Damit lässt sich
+          alles am Gerät nachsehen und ändern, was diese Oberfläche nicht abdeckt —
+          Konfigurationsdateien, Protokolle, Dienste. <br>⚠ Der Zugang läuft als
+          Verwalter und ist mit einem festen Standardpasswort geschützt. In einem Netz
+          mit fremden Geräten sollte er ausgeschaltet bleiben. <br>⚠ Nach einem
+          Firmware-Wechsel meldet der eigene Rechner einen geänderten Geräteschlüssel —
+          das ist normal und kein Angriff.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -13,7 +20,7 @@ settings:
           - "false"
         options:
           "true":
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -21,7 +28,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg remote_access ssh true &&
                 /etc/init.d/S50dropbear restart
           "false":
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

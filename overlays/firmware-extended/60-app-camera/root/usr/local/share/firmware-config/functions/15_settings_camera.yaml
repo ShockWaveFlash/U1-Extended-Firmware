@@ -2,7 +2,7 @@ links:
   internal-camera:
     url: /webcam
     icon: "📷"
-    label: Internal Camera
+    label: "Eingebaute Kamera"
     condition:
       setting: camera-internal
       value: paxx12
@@ -10,7 +10,7 @@ links:
   usb-camera:
     url: /webcam2
     icon: "📹"
-    label: USB Camera
+    label: "USB-Kamera"
     condition:
       setting: camera-usb
       value: paxx12
@@ -19,8 +19,13 @@ settings:
   camera:
     items:
       camera-internal:
-        label: Internal Camera
-        description: Select the driver for the built-in MIPI camera.
+        label: "Eingebaute Kamera"
+        description: >-
+          Wählt, welche Ansteuerung für die eingebaute Kamera verwendet wird.
+          <br>„Snapmaker“ ist die Werksansteuerung. „Paxx12“ ist die Variante der
+          erweiterten Firmware; sie kann zusätzlich einen RTSP-Videostrom ausgeben und
+          die KI-Erkennung bedienen. <br>⚠ Eine Änderung greift erst nach einem Neustart
+          des Druckers.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -30,7 +35,7 @@ settings:
           - paxx12
         options:
           paxx12:
-            label: Paxx12
+            label: "Paxx12"
             cmd:
               - bash
               - -xc
@@ -39,7 +44,7 @@ settings:
                 /etc/init.d/S90lmd stop &&
                 /etc/init.d/S99v4l2-mpp-mipi restart
           snapmaker:
-            label: Snapmaker
+            label: "Snapmaker"
             cmd:
               - bash
               - -xc
@@ -48,7 +53,7 @@ settings:
                 /etc/init.d/S99v4l2-mpp-mipi stop &&
                 /etc/init.d/S90lmd start
           none:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc
@@ -59,8 +64,13 @@ settings:
         default: paxx12
 
       camera-internal-resolution:
-        label: Internal Camera Resolution
-        description: Resolution and framerate for the built-in MIPI camera. Resolution is always 1080p; only framerate can be lowered.
+        label: "Auflösung der eingebauten Kamera"
+        description: >-
+          Auflösung und Bildrate der eingebauten Kamera. Die Auflösung liegt fest bei
+          1080p, nur die Bildrate lässt sich senken. <br>Weniger Bilder je Sekunde
+          bedeuten weniger Rechenlast und weniger Netzverkehr — sinnvoll, wenn der
+          Drucker unter Last ruckelt oder das Bild über eine langsame Verbindung geht.
+          Für die Drucküberwachung reichen wenige Bilder je Sekunde völlig.
         if_cmd: test "$(/usr/local/bin/extended-config.py get /home/lava/printer_data/config/extended/extended2.cfg camera internal paxx12)" = "paxx12"
         get_cmd:
           - /usr/local/bin/extended-config.py
@@ -71,7 +81,7 @@ settings:
           - 1080p25
         options:
           1080p30:
-            label: 1920x1080 @ 30fps
+            label: "1920×1080 mit 30 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -79,7 +89,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera internal_resolution 1080p30 &&
                 /etc/init.d/S99v4l2-mpp-mipi restart
           1080p25:
-            label: 1920x1080 @ 25fps
+            label: "1920×1080 mit 25 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -87,7 +97,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera internal_resolution 1080p25 &&
                 /etc/init.d/S99v4l2-mpp-mipi restart
           1080p15:
-            label: 1920x1080 @ 15fps
+            label: "1920×1080 mit 15 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -95,7 +105,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera internal_resolution 1080p15 &&
                 /etc/init.d/S99v4l2-mpp-mipi restart
           1080p5:
-            label: 1920x1080 @ 5fps
+            label: "1920×1080 mit 5 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -105,8 +115,11 @@ settings:
         default: 1080p25
 
       camera-usb:
-        label: USB Camera
-        description: Enable streaming from an attached USB camera.
+        label: "USB-Kamera"
+        description: >-
+          Gibt das Bild einer zusätzlich angeschlossenen USB-Kamera aus. <br>⚠ Der U1
+          hat nur einen freien USB-Anschluss — eine Kamera dort belegt den Platz, den
+          sonst ein Wiederherstellungs-Stick oder ein Zusatzrechner braucht.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -116,7 +129,7 @@ settings:
           - none
         options:
           paxx12:
-            label: Paxx12
+            label: "Paxx12"
             cmd:
               - bash
               - -xc
@@ -127,7 +140,7 @@ settings:
                 /etc/init.d/S99v4l2-mpp-usb restart &&
                 /etc/init.d/S61moonraker restart
           none:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc
@@ -139,8 +152,10 @@ settings:
         default: none
 
       camera-usb-resolution:
-        label: USB Camera Resolution
-        description: Resolution and framerate for the USB camera stream. Only supported by the paxx12 USB camera driver.
+        label: "Auflösung der USB-Kamera"
+        description: >-
+          Auflösung und Bildrate der USB-Kamera. ⚠ Wird nur von der Paxx12-Ansteuerung
+          unterstützt; mit der Werksansteuerung bleibt die Einstellung wirkungslos.
         if_cmd: test "$(/usr/local/bin/extended-config.py get /home/lava/printer_data/config/extended/extended2.cfg camera usb none)" = "paxx12"
         get_cmd:
           - /usr/local/bin/extended-config.py
@@ -151,7 +166,7 @@ settings:
           - 1080p25
         options:
           1080p30:
-            label: 1920x1080 @ 30fps
+            label: "1920×1080 mit 30 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -159,7 +174,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 1080p30 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           1080p25:
-            label: 1920x1080 @ 25fps
+            label: "1920×1080 mit 25 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -167,7 +182,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 1080p25 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           1080p5:
-            label: 1920x1080 @ 5fps
+            label: "1920×1080 mit 5 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -175,7 +190,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 1080p5 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           720p30:
-            label: 1280x720 @ 30fps
+            label: "1280×720 mit 30 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -183,7 +198,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 720p30 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           720p25:
-            label: 1280x720 @ 25fps
+            label: "1280×720 mit 25 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -191,7 +206,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 720p25 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           720p5:
-            label: 1280x720 @ 5fps
+            label: "1280×720 mit 5 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -199,7 +214,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 720p5 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           360p30:
-            label: 640x360 @ 30fps
+            label: "640×360 mit 30 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -207,7 +222,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 360p30 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           360p25:
-            label: 640x360 @ 25fps
+            label: "640×360 mit 25 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -215,7 +230,7 @@ settings:
                 /usr/local/bin/extended-config.py add /home/lava/printer_data/config/extended/extended2.cfg camera usb_resolution 360p25 &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           360p5:
-            label: 640x360 @ 5fps
+            label: "640×360 mit 5 Bildern/s"
             cmd:
               - bash
               - -xc
@@ -225,8 +240,12 @@ settings:
         default: 1080p25
 
       camera-rtsp:
-        label: RTSP Stream (paxx12 only)
-        description: Enable RTSP stream output for the internal camera (paxx12 driver only).
+        label: "RTSP-Videostrom (nur mit Paxx12)"
+        description: >-
+          Gibt das Kamerabild zusätzlich als RTSP-Videostrom aus — das Format, das
+          Überwachungssoftware und Hausautomation erwarten. <br>Damit lässt sich das
+          Druckbild etwa in Home Assistant oder einen Videorekorder einbinden, ohne den
+          Umweg über die Weboberfläche. ⚠ Nur mit der Paxx12-Ansteuerung.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -236,7 +255,7 @@ settings:
           - "false"
         options:
           "true":
-            label: Enabled
+            label: "Ein"
             cmd:
               - bash
               - -xc
@@ -245,7 +264,7 @@ settings:
                 /etc/init.d/S99v4l2-mpp-mipi restart &&
                 /etc/init.d/S99v4l2-mpp-usb restart
           "false":
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

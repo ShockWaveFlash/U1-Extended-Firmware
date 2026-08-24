@@ -2,8 +2,15 @@ settings:
   troubleshooting:
     items:
       toolhead4:
-        label: Toolhead 4
-        description: Temporary thermistor and heating bypass for Toolhead 4.
+        label: "Werkzeugkopf 4"
+        description: >-
+          Nimmt Werkzeugkopf 4 vorübergehend aus der Temperaturüberwachung. <br>Wozu:
+          Ist der Temperaturfühler eines Kopfes defekt, hält Klipper das für einen
+          Notfall und verweigert den Betrieb — obwohl die anderen drei Köpfe in Ordnung
+          sind. Dieser Schalter lässt den Drucker mit den übrigen Köpfen weiterarbeiten,
+          bis Ersatz da ist. <br>⚠⚠ Mit dem überbrückten Kopf darf weder geheizt noch
+          gedruckt werden: Ohne Fühler merkt niemand, wenn er zu heiß wird. Klipper
+          startet beim Umschalten neu.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/faulty_toolhead
         get_cmd:
           - bash
@@ -11,7 +18,7 @@ settings:
           - test -e /oem/printer_data/config/extended/klipper/faulty_toolhead4.cfg && echo "bypass_thermistor" || echo "enabled"
         options:
           enabled:
-            label: Normal
+            label: "Normal"
             cmd:
               - bash
               - -xc
@@ -20,8 +27,11 @@ settings:
                 echo "Toolhead 4 thermistor bypass disabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           bypass_thermistor:
-            label: Bypass Thermistor
-            confirm: "Apply the faulty toolhead bypass to Toolhead 4? This disables normal temperature fault handling for Toolhead 4 so the printer can keep using the other toolheads. Do not heat or print with the faulty toolhead while this bypass is enabled."
+            label: "Fühler überbrücken"
+            confirm: >-
+              Werkzeugkopf 4 aus der Temperaturüberwachung nehmen? Der Drucker kann dann
+              mit den übrigen Köpfen weiterarbeiten. ⚠⚠ Mit diesem Kopf darf solange
+              weder geheizt noch gedruckt werden.
             cmd:
               - bash
               - -xc

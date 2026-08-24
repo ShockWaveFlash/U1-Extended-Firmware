@@ -1,17 +1,17 @@
 settings:
   web:
-    label: Web
+    label: "Weboberfläche"
   camera:
-    label: Camera
+    label: "Kamera"
   remote_access:
-    label: Remote Access
+    label: "Fernzugriff"
   snapmaker_components:
-    label: Snapmaker Components
+    label: "Snapmaker-Komponenten"
   print_preferences:
-    label: Print Preferences
+    label: "Druckverhalten"
   tweaks:
-    label: Tweaks
+    label: "Feineinstellungen"
   troubleshooting:
-    label: Troubleshooting
+    label: "Fehlersuche"
   monitoring_debugging:
-    label: Monitoring & Debugging
+    label: "Überwachung und Fehlersuche"

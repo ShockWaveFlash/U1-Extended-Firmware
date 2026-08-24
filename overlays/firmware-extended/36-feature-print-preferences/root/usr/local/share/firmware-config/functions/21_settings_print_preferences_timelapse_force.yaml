@@ -2,8 +2,12 @@ settings:
   print_preferences:
     items:
       timelapse_force:
-        label: Force Timelapse
-        description: Forces timelapse regardless if configured in the Snapmaker app. Your slicer must call TIMELAPSE_START, TIMELAPSE_TAKE_FRAME, and TIMELAPSE_STOP.
+        label: "Zeitraffer erzwingen"
+        description: >-
+          Erlaubt Zeitrafferaufnahmen auch dann, wenn sie in der Snapmaker-App nicht
+          eingeschaltet sind. <br>⚠ Der Slicer muss die Befehle selbst geben:
+          TIMELAPSE_START am Anfang, TIMELAPSE_TAKE_FRAME bei jedem Schichtwechsel und
+          TIMELAPSE_STOP am Ende. Ohne diese Aufrufe passiert nichts.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/tweaks#force-timelapse
         get_cmd:
           - bash
@@ -11,8 +15,11 @@ settings:
           - test -f /oem/printer_data/config/extended/klipper/timelapse_force.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Allow TIMELAPSE_START to bypass the Snapmaker timelapse preference? Your slicer must call TIMELAPSE_START, TIMELAPSE_TAKE_FRAME, and TIMELAPSE_STOP."
+            label: "Ein"
+            confirm: >-
+              Zeitraffer auch ohne die Einstellung in der Snapmaker-App zulassen? Der
+              Slicer muss TIMELAPSE_START, TIMELAPSE_TAKE_FRAME und TIMELAPSE_STOP
+              selbst aufrufen.
             cmd:
               - bash
               - -xc
@@ -22,7 +29,7 @@ settings:
                 echo "Force timelapse enabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

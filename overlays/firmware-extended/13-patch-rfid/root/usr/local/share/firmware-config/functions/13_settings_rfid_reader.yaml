@@ -1,11 +1,16 @@
 settings:
   snapmaker_components:
-    label: Snapmaker Components
+    label: "Snapmaker-Komponenten"
     items:
       rfid:
-        label: Filament Detection
+        label: "Filamenterkennung"
         help_url: https://snapmakeru1-extended-firmware.pages.dev/rfid_support#alternative-detection-systems
-        description: Set how filament is detected.
+        description: >-
+          Legt fest, woher der Drucker weiß, welches Filament eingelegt ist.
+          <br>„Snapmaker“ nutzt die Funkerkennung der Originalspulen, die Materialart
+          und Farbe selbst melden. „Extern“ schaltet auf einen selbst angeschlossenen
+          Lesekopf um, mit dem sich auch Fremdspulen kennzeichnen lassen. Klipper
+          startet beim Umschalten neu.
         get_cmd:
           - /usr/local/bin/extended-config.py
           - get
@@ -15,7 +20,7 @@ settings:
           - snapmaker
         options:
           external:
-            label: External
+            label: "Extern"
             cmd:
               - bash
               - -xc
@@ -25,7 +30,7 @@ settings:
                 /etc/init.d/S59rfid-support restart
                 /etc/init.d/S60klipper restart
           snapmaker:
-            label: Snapmaker
+            label: "Snapmaker"
             cmd:
               - bash
               - -xc

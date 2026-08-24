@@ -2,8 +2,15 @@ settings:
   print_preferences:
     items:
       object_processing:
-        label: Object Processing for Adaptive Mesh
-        description: Enables Moonraker object processing for adaptive mesh. Prefer enabling exclude object in your slicer instead.
+        label: "Objekterkennung für die angepasste Vermessung"
+        description: >-
+          Lässt Moonraker die Druckdatei selbst nach Objektgrenzen durchsuchen, damit
+          die angepasste Bettvermessung weiß, wo gedruckt wird. <br>⚠ Der bessere Weg
+          ist, im Slicer „Objekte ausschließen“ einzuschalten — dann stehen die Grenzen
+          bereits in der Datei. Diese Auswertung hier kostet bei großen Dateien viel
+          Zeit: über 100 MB dauert das Hochladen spürbar länger, und Snapmaker Orca
+          bleibt scheinbar bei 100 % hängen. Nur einschalten, wenn der Slicer es nicht
+          selbst kann.
         help_url: http://snapmakeru1-extended-firmware.pages.dev/tweaks#object-processing-for-adaptive-mesh
         get_cmd:
           - bash
@@ -11,8 +18,12 @@ settings:
           - test -f /oem/printer_data/config/extended/moonraker/object_processing.cfg && echo "enabled" || echo "disabled"
         options:
           enabled:
-            label: Enabled
-            confirm: "Enable Moonraker object processing? Note: Enabling 'Exclude Object' in your slicer settings is preferred over this option. This can cause long processing times for large gcode files (> 100MB), delays when uploading files, and extended time stuck at 100% in Snapmaker Orca. Only enable if your slicer doesn't support exclude object."
+            label: "Ein"
+            confirm: >-
+              Objekterkennung durch Moonraker einschalten? ⚠ Besser wäre „Objekte
+              ausschließen“ im Slicer. Bei Dateien über 100 MB dauert die Auswertung
+              lange, das Hochladen verzögert sich, und Snapmaker Orca scheint bei 100 %
+              hängenzubleiben. Nur einschalten, wenn der Slicer das nicht selbst kann.
             cmd:
               - bash
               - -xc
@@ -22,7 +33,7 @@ settings:
                 echo "Object processing enabled. Restarting Moonraker..." &&
                 /etc/init.d/S61moonraker restart
           disabled:
-            label: Disabled
+            label: "Aus"
             cmd:
               - bash
               - -xc

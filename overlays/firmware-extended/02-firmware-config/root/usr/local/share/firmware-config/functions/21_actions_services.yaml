@@ -2,19 +2,29 @@ actions:
   services:
     items:
       restart-klipper:
-        label: Restart Klipper
-        description: Restart the Klipper firmware service.
-        confirm: true
+        label: "Klipper neu starten"
+        description: >-
+          Startet die Drucksteuerung neu. Sie liest dabei ihre Konfiguration frisch ein
+          und baut die Verbindung zu allen Mikrocontrollern neu auf. <br>Das ist der
+          übliche Weg, nachdem Klipper mit einem Fehler stehengeblieben ist, und nach
+          Änderungen an der Konfiguration. <br>⚠ Ein laufender Druck wird abgebrochen,
+          und die Referenzierung geht verloren.
+        confirm: "Klipper neu starten? Ein laufender Druck wird abgebrochen und die Referenzierung geht verloren."
         cmd:
           - /etc/init.d/S60klipper
           - restart
-        message: "Restarting Klipper..."
+        message: "Klipper wird neu gestartet…"
 
       restart-moonraker:
-        label: Restart Moonraker
-        description: Restart the Moonraker API server.
-        confirm: true
+        label: "Moonraker neu starten"
+        description: >-
+          Startet den Vermittlungsdienst neu, über den Weboberfläche, Slicer und
+          Hausautomation mit dem Drucker sprechen. <br>Klipper selbst und ein laufender
+          Druck bleiben davon unberührt — es bricht nur kurz die Verbindung zu allen
+          Bedienoberflächen ab. <br>Hilft, wenn die Weboberfläche keine Werte mehr
+          zeigt, während der Drucker weiterläuft.
+        confirm: "Klipper neu starten? Ein laufender Druck wird abgebrochen und die Referenzierung geht verloren."
         cmd:
           - /etc/init.d/S61moonraker
           - restart
-        message: "Restarting Moonraker..."
+        message: "Moonraker wird neu gestartet…"

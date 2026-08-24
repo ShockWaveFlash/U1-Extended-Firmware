@@ -2,14 +2,18 @@ quick_actions:
   upgrades:
     items:
       octoeverywhere-upgrade:
-        label: Upgrade OctoEverywhere
-        description: Download and install the latest pinned OctoEverywhere version.
+        label: "OctoEverywhere aktualisieren"
+        description: >-
+          Lädt die in dieser Firmware hinterlegte Fassung von OctoEverywhere herunter
+          und installiert sie. <br>⚠ Es wird eine FEST VORGEGEBENE Version geladen,
+          nicht die jeweils neueste — die Version steht im Firmware-Image. Ein neuerer
+          Stand kommt erst mit einem Firmware-Update.
         if_cmd: /usr/local/bin/extended-pkg octoeverywhere needs_upgrade
-        confirm: "Upgrade OctoEverywhere and restart the cloud service?"
+        confirm: "OctoEverywhere aktualisieren und den Dienst neu starten?"
         cmd:
           - bash
           - -ec
           - |
             /usr/local/bin/extended-pkg octoeverywhere upgrade
             /etc/init.d/S99cloud restart
-        message: "Upgrading OctoEverywhere..."
+        message: "OctoEverywhere wird aktualisiert…"

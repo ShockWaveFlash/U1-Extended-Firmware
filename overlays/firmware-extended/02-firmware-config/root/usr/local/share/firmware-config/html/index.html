@@ -87,11 +87,11 @@
         <h1>Firmware Config <button class="btn btn-primary" onclick="refreshAll()">&#x21bb; Refresh</button></h1>
 
         <div id="service-notice" class="notice">
-            Service unavailable. Ensure <strong>Advanced Mode</strong> is enabled, then restart the printer. <a href="https://github.com/paxx12/SnapmakerU1-Extended-Firmware/blob/main/docs/firmware_config.md" target="_blank">View docs</a>
+            Service unavailable. Ensure <strong>Erweiterter Modus</strong> is enabled, then restart the printer. <a href="https://github.com/paxx12/SnapmakerU1-Extended-Firmware/blob/main/docs/firmware_config.md" target="_blank">Dokumentation</a>
         </div>
 
         <div id="service-error" class="notice">
-            Service unavailable. <a href="javascript:refreshAll()">Refresh to reload</a>
+            Service unavailable. <a href="javascript:refreshAll()">Zum Neuladen aktualisieren</a>
         </div>
 
         <div id="auth-notice" class="notice">
@@ -104,34 +104,34 @@
 
         <div id="main-content">
         <div class="card">
-            <div class="card-header"><span class="card-title">Status</span></div>
+            <div class="card-header"><span class="card-title">Zustand</span></div>
             <div id="status-container" class="info-grid"><div class="loading"><span class="spinner"></span> Loading...</div></div>
         </div>
 
         <div class="card" id="quick-actions-card" style="display:none">
-            <div class="card-header"><span class="card-title">Quick Actions</span></div>
+            <div class="card-header"><span class="card-title">Schnellzugriff</span></div>
             <div id="quick-actions-container"><div class="loading"><span class="spinner"></span> Loading...</div></div>
         </div>
 
         <div class="card">
-            <div class="card-header"><span class="card-title">Quick Links</span></div>
+            <div class="card-header"><span class="card-title">Verweise</span></div>
             <div id="links-container" class="links-grid"><div class="loading"><span class="spinner"></span> Loading...</div></div>
         </div>
 
         <div class="card">
-            <div class="card-header"><span class="card-title">Settings</span></div>
+            <div class="card-header"><span class="card-title">Einstellungen</span></div>
             <div id="settings-container"><div class="loading"><span class="spinner"></span> Loading...</div></div>
         </div>
 
         <div class="card">
-            <div class="card-header"><span class="card-title">Actions</span></div>
+            <div class="card-header"><span class="card-title">Aktionen</span></div>
             <div id="actions-container"><div class="loading"><span class="spinner"></span> Loading...</div></div>
         </div>
 
         <div class="card" id="upgrade-card">
-            <div class="card-header"><span class="card-title">Firmware Upgrade</span></div>
+            <div class="card-header"><span class="card-title">Firmware aktualisieren</span></div>
             <div class="input-row">
-                <input type="text" class="input" id="url-input" placeholder="Enter firmware URL" oninput="validateURL()">
+                <input type="text" class="input" id="url-input" placeholder="Adresse der Firmware-Datei eingeben" oninput="validateURL()">
                 <button class="btn btn-primary" id="download-btn" disabled onclick="downloadUpgrade()">Download & Upgrade</button>
             </div>
             <div class="separator">OR</div>
@@ -152,8 +152,8 @@
             <div class="modal-message" id="confirm-message" style="white-space:pre-wrap"></div>
             <div id="confirm-input-wrap" style="display:none;"></div>
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="hideConfirmModal()">Cancel</button>
-                <button class="btn btn-danger" id="confirm-btn">Confirm</button>
+                <button class="btn btn-secondary" onclick="hideConfirmModal()">Abbrechen</button>
+                <button class="btn btn-danger" id="confirm-btn">Bestätigen</button>
             </div>
         </div>
     </div>
@@ -167,8 +167,8 @@
             <div class="progress-info" id="action-progress-info"><span id="action-progress-text"></span><span id="action-speed"></span></div>
             <pre class="modal-log" id="action-log"></pre>
             <div class="modal-buttons">
-                <button class="btn btn-primary" id="action-download-btn" style="display:none" onclick="downloadFile()">Download File</button>
-                <button class="btn btn-secondary" id="action-close-btn" disabled onclick="hideActionModal()">Close</button>
+                <button class="btn btn-primary" id="action-download-btn" style="display:none" onclick="downloadFile()">Datei herunterladen</button>
+                <button class="btn btn-secondary" id="action-close-btn" disabled onclick="hideActionModal()">Schließen</button>
             </div>
         </div>
     </div>
@@ -227,13 +227,13 @@
             hideNotices();
             if (resp.status === 401) {
                 showAuthNotice();
-                throw new Error('Authentication required');
+                throw new Error('Anmeldung erforderlich');
             } else if (resp.status === 502) {
                 showServiceNotice();
-                throw new Error('Service unavailable');
+                throw new Error('Dienst nicht erreichbar');
             } else if (resp.status >= 500 && resp.status < 600) {
                 showServiceError();
-                throw new Error(`Service unavailable (HTTP ${resp.status})`);
+                throw new Error(`Dienst nicht erreichbar (HTTP ${resp.status})`);
             } else if (!resp.ok) {
                 throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
             }
@@ -253,7 +253,7 @@
                     .filter(([_, section]) => !section.hidden || showHidden)
                     .map(([key, section]) => {
                     const itemsHtml = section.items.map(item =>
-                        `<div><strong>${item.label}:</strong> ${item.value || 'N/A'}</div>`
+                        `<div><strong>${item.label}:</strong> ${item.value || '–'}</div>`
                     ).join('');
                     return `<div class="info-item">
                         <div class="info-label">${section.title}</div>
@@ -306,7 +306,7 @@
                                     <span class="row-label">${action.label}${action.help_url ? `<a class="row-help" href="${action.help_url}" target="_blank" onclick="event.stopPropagation()">↗</a>` : ''}</span>
                                     ${action.description ? `<span class="row-desc">${action.description}</span>` : ''}
                                 </div>
-                                <button class="btn btn-primary" style="pointer-events:none">Run</button>
+                                <button class="btn btn-primary" style="pointer-events:none">Ausführen</button>
                             </div>`
                         ).join('')}
                     </div>`
@@ -440,7 +440,7 @@
                     if (errEl) errEl.textContent = '';
                 } else if (rx && !new RegExp(rx).test(val)) {
                     valid = false;
-                    if (errEl) errEl.textContent = 'Invalid format';
+                    if (errEl) errEl.textContent = 'Ungültige Eingabe';
                 } else {
                     if (errEl) errEl.textContent = '';
                 }
@@ -462,7 +462,7 @@
             $('confirm-message').textContent = message;
             const helpLinkEl = $('confirm-help-link');
             if (helpUrl) {
-                helpLinkEl.innerHTML = `<a href="${helpUrl}" target="_blank">View documentation</a>`;
+                helpLinkEl.innerHTML = `<a href="${helpUrl}" target="_blank">Dokumentation ansehen</a>`;
                 helpLinkEl.style.display = 'block';
             } else {
                 helpLinkEl.style.display = 'none';
@@ -532,7 +532,7 @@
 
             showConfirmModal(
                 'Confirm Download & Upgrade',
-                'Download and upgrade from URL? System may reboot.',
+                'Firmware von dieser Adresse laden und einspielen? Der Drucker startet dabei möglicherweise neu.',
                 () => doDownloadUpgrade(url)
             );
         }
@@ -540,9 +540,9 @@
         async function doDownloadUpgrade(url) {
             const btn = $('download-btn');
             btn.disabled = true;
-            btn.textContent = 'Processing...';
+            btn.textContent = 'Wird verarbeitet…';
 
-            showActionModal('Download & Upgrade', 'Downloading and upgrading...');
+            showActionModal('Download & Upgrade', 'Wird heruntergeladen und eingespielt…');
             $('action-log').classList.add('visible');
 
             try {
@@ -566,8 +566,8 @@
             if (!selectedFile) return;
 
             showConfirmModal(
-                'Confirm Upgrade',
-                'Upload and upgrade? System may reboot.',
+                'Aktualisierung bestätigen',
+                'Datei hochladen und einspielen? Der Drucker startet dabei möglicherweise neu.',
                 doUploadUpgrade
             );
         }
@@ -577,9 +577,9 @@
 
             const btn = $('upload-btn');
             btn.disabled = true;
-            btn.textContent = 'Uploading...';
+            btn.textContent = 'Wird hochgeladen…';
 
-            showActionModal('Upgrade', 'Uploading...');
+            showActionModal('Upgrade', 'Wird hochgeladen…');
             $('action-log').classList.add('visible');
             $('action-progress').classList.add('visible');
             $('action-progress-info').classList.add('visible');
@@ -603,7 +603,7 @@
                     $('action-progress-text').textContent = `${pct.toFixed(1)}% (${formatSize(e.loaded)} / ${formatSize(e.total)})`;
                 } else {
                     $('action-progress-fill').classList.add('indeterminate');
-                    $('action-progress-text').textContent = 'Uploading...';
+                    $('action-progress-text').textContent = 'Wird hochgeladen…';
                 }
 
                 const elapsed = (performance.now() - startTime) / 1000;
@@ -614,8 +614,8 @@
             };
 
             xhr.upload.onload = () => {
-                setMessage('Installing firmware...');
-                btn.textContent = 'Upgrading...';
+                setMessage('Firmware wird installiert…');
+                btn.textContent = 'Wird aktualisiert…';
                 $('action-progress').classList.remove('visible');
                 $('action-progress-info').classList.remove('visible');
             };
@@ -634,11 +634,11 @@
 
                 const lastLine = (xhr.responseText.trim().split('\n').pop() || '');
                 if (lastLine.startsWith('SUCCESS:')) {
-                    setMessage('Success - System will reboot', 'var(--success)');
+                    setMessage('Erfolgreich – der Drucker startet neu', 'var(--success)');
                 } else if (lastLine.startsWith('ERROR:')) {
-                    setMessage('Upgrade failed', 'var(--error)');
+                    setMessage('Aktualisierung fehlgeschlagen', 'var(--error)');
                 } else {
-                    setMessage('Completed');
+                    setMessage('Abgeschlossen');
                 }
 
                 enableCloseButton();
@@ -648,7 +648,7 @@
 
             xhr.onerror = () => {
                 appendLog('\nERROR: Upload failed\n');
-                setMessage('Upload failed', 'var(--error)');
+                setMessage('Hochladen fehlgeschlagen', 'var(--error)');
                 enableCloseButton();
                 btn.disabled = false;
                 btn.textContent = 'Upload & Upgrade';
@@ -669,7 +669,7 @@
             if (actionConfig?.confirm) {
                 const message = typeof actionConfig.confirm === 'string'
                     ? actionConfig.confirm
-                    : `Are you sure you want to run "${title}"?`;
+                    : `Aktion „${title}“ jetzt ausführen?`;
                 showConfirmModal(title, message, () => doRunAction(id, title));
             } else {
                 doRunAction(id, title);
@@ -677,7 +677,7 @@
         }
 
         function doRunAction(id, title) {
-            showActionModal(title, 'Executing...');
+            showActionModal(title, 'Wird ausgeführt…');
             $('action-log').classList.add('visible');
             execAction(id);
         }
@@ -714,11 +714,11 @@
             const isFailed = lastLine.startsWith('ERROR:');
 
             if (isSuccess) {
-                setMessage('Completed successfully', 'var(--success)');
+                setMessage('Erfolgreich abgeschlossen', 'var(--success)');
             } else if (isFailed) {
                 setMessage('Failed', 'var(--error)');
             } else {
-                setMessage('Completed');
+                setMessage('Abgeschlossen');
             }
 
             enableCloseButton();
@@ -747,11 +747,11 @@
             const label = Array.from(labelEl.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent).join('').trim();
             const helpUrl = selectEl.dataset.helpUrl || '';
 
-            const message = confirmMsg || `Change ${label} to "${optLabel}"?`;
+            const message = confirmMsg || `${label} auf „${optLabel}“ umstellen?`;
             const warning = '⚠️ Warning: Changing settings will restart services and may interrupt printing.';
 
             showConfirmModal(
-                `Update ${label}`,
+                `${label} ändern`,
                 `${message}\n\n${warning}`,
                 (inputValues) => { selectEl.dataset.prevValue = value; doUpdateSetting(key, value, inputValues); },
                 () => { selectEl.value = prevValue; },
@@ -761,7 +761,7 @@
         }
 
         async function doUpdateSetting(key, value, inputValues) {
-            showActionModal('Updating Setting', 'Applying changes...');
+            showActionModal('Einstellung wird geändert', 'Änderung wird übernommen…');
             $('action-log').classList.add('visible');
 
             try {
@@ -805,7 +805,7 @@
                 a.click();
                 URL.revokeObjectURL(a.href);
             } catch (e) {
-                alert('Download failed: ' + e.message);
+                alert('Herunterladen fehlgeschlagen: ' + e.message);
             }
         }
 
