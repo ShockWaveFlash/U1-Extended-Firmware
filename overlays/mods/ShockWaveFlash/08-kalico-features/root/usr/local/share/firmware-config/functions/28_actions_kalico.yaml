@@ -176,11 +176,20 @@ actions:
           Jedes Hotend wird aufgeheizt und dann kontrolliert abgekühlt, wobei der
           Bauteillüfter mehrere Stufen durchfährt. Daraus bestimmt Kalico, wieviel Wärme
           der Block speichert und wieviel der Lüfter bei welcher Drehzahl abführt.
-          Dauer: etwa 10 bis 20 Minuten JE Hotend, insgesamt also bis zu einer Stunde.
-          Sinnvoll nur, wenn die Hotends auf MPC stehen. Vorher Filament entnehmen und
-          die Düsen sauber machen — anhaftendes Material verfälscht die Wärmebilanz.
+          Dauer: etwa 10 bis 20 Minuten JE Hotend, insgesamt also bis zu zwei Stunden.
+          Der größte Teil davon ist Abkühlen, nicht Heizen — heiß ist die Düse nur
+          wenige Minuten bei rund 200 °C.
+          <br>Sinnvoll nur, wenn die Hotends auf MPC stehen.
+          <br>Filament muss NICHT entnommen werden — die Kalico-Doku verlangt es nicht,
+          und die winzige Masse im Zuführweg fällt gegen den Messing-Heizblock nicht ins
+          Gewicht. Es läuft allerdings flüssiges Material aus der Düse, weil nichts
+          extrudiert wird: entweder vorher entladen oder etwas unterlegen und hinterher
+          spülen.
+          <br>Der Bauteillüfter wird vor dem Start abgeschaltet — die Routine misst den
+          Wärmeverlust erst ohne und dann mit Lüfter, ein vorlaufender Lüfter macht die
+          erste Messung wertlos.
         if_cmd: sh /usr/local/share/firmware-config/kalico/has-feature.sh mpc
-        confirm: "MPC-Kalibrierung für ALLE VIER Hotends starten? Jedes Hotend wird nacheinander aufgeheizt, insgesamt bis zu einer Stunde. Vorher Filament entnehmen und Düsen säubern. Währenddessen nicht drucken."
+        confirm: "MPC-Kalibrierung für ALLE VIER Hotends starten? Jedes Hotend kühlt zuerst auf Raumtemperatur ab und heizt dann über 200 Grad - insgesamt bis zu zwei Stunden. Aus der Düse läuft dabei Material, falls Filament geladen ist. Währenddessen nicht drucken."
         cmd:
           - sh
           - /usr/local/share/firmware-config/kalico/mpc-calibrate-all.sh
