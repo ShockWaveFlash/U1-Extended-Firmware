@@ -573,12 +573,15 @@ class InputShaper:
         self._config_path = None
         self._config = None
         if self._shaper_params_persistable():
-            DEFAULT_SHAPER_CONFIG['axis_x']['type'] = self.shapers[0].params.shaper_type
-            DEFAULT_SHAPER_CONFIG['axis_x']['freq'] = self.shapers[0].params.shaper_freq
-            DEFAULT_SHAPER_CONFIG['axis_x']['damping_ratio'] = self.shapers[0].params.damping_ratio
-            DEFAULT_SHAPER_CONFIG['axis_y']['type'] = self.shapers[1].params.shaper_type
-            DEFAULT_SHAPER_CONFIG['axis_y']['freq'] = self.shapers[1].params.shaper_freq
-            DEFAULT_SHAPER_CONFIG['axis_y']['damping_ratio'] = self.shapers[1].params.damping_ratio
+            for _i, _ax in enumerate(("x", "y")):
+                _p = self.shapers[_i].params
+                _d = DEFAULT_SHAPER_CONFIG['axis_' + _ax]
+                _d['type'] = self.shapers[_i].get_type()
+                if hasattr(_p, 'smoother_freq'):
+                    _d['freq'] = _p.smoother_freq
+                else:
+                    _d['freq'] = _p.shaper_freq
+                _d['damping_ratio'] = getattr(_p, 'damping_ratio', 0.1)
             config_dir = self.printer.get_snapmaker_config_dir()
             config_name = SHAPER_CONFIG_FILE
             self._config_path = os.path.join(config_dir, config_name)
