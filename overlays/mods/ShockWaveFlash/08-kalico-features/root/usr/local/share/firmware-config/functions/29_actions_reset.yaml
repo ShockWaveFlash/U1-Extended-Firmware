@@ -1,0 +1,35 @@
+actions:
+  recovery:
+    items:
+      mod-tuning-zuruecksetzen:
+        label: Tuning-Einstellungen zurücksetzen
+        description: >-
+          Verschiebt die Tuning-Fragmente aus <code>extended/klipper/</code> in einen
+          Unterordner. Danach gelten wieder die Werte aus der printer.cfg — also
+          Snapmakers Werkseinstellungen für Shaper, Mesh, Lüfter, Heizung und Makros.
+          <br>⚠ <b>Nichts wird gelöscht.</b> Alles landet in
+          <code>extended/klipper/zurueckgesetzt-&lt;Zeitstempel&gt;/</code> und lässt sich
+          von Hand zurückschieben.
+          <br>⚠ <b>Hardware, Sensorik und Sicherheit bleiben unangetastet:</b>
+          Motorgeometrie und -ströme (der Drucker führe sonst mit falscher
+          Schrittzahl), die Z-Drift-Kompensation über den Rahmenthermistor, der
+          Pico-Schalter und die Heizungsüberwachung.
+          <br>Klipper startet danach neu.
+        confirm: "Alle Tuning-Fragmente zurücksetzen? Shaper, Mesh-Wrapper, Lüfterkurven, MPC-Modellwerte und eigene Makros gelten danach nicht mehr. Hardware- und Sicherheitsfragmente bleiben. Rückgängig: die Dateien aus dem Unterordner zurückschieben."
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/mod-tuning-zuruecksetzen.sh
+        background: false
+        message: "Tuning-Fragmente werden zurückgesetzt:"
+
+      mod-tuning-vorschau:
+        label: Zurücksetzen — nur anzeigen
+        description: >-
+          Zeigt, was ein Zurücksetzen verschieben würde und was bleibt.
+          Ändert nichts.
+        cmd:
+          - sh
+          - /usr/local/share/firmware-config/kalico/mod-tuning-zuruecksetzen.sh
+          - "--trockenlauf"
+        background: false
+        message: "Vorschau:"
