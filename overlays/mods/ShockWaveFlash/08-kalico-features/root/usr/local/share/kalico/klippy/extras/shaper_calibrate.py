@@ -723,7 +723,8 @@ class ShaperCalibrate:
                 "SET_INPUT_SHAPER",
                 {
                     "SHAPER_TYPE_" + axis: shaper_name,
-                    "SHAPER_FREQ_" + axis: shaper_freq,
+                    ("SMOOTHER_FREQ_" if shaper_name.startswith("smooth")
+                     else "SHAPER_FREQ_") + axis: shaper_freq,
                 },
             )
         )

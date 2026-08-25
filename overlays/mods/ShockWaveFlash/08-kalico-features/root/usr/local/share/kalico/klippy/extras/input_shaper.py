@@ -621,30 +621,42 @@ class InputShaper:
             self.extruders.append(extruder)
         # Configure initial values
         if self._config is not None:
-            self.shapers[0].params.shaper_type = self._config['axis_x']['type']
-            self.shapers[0].params.shaper_freq = self._config['axis_x']['freq']
-            self.shapers[0].params.damping_ratio = self._config['axis_x']['damping_ratio']
-            self.shapers[1].params.shaper_type = self._config['axis_y']['type']
-            self.shapers[1].params.shaper_freq = self._config['axis_y']['freq']
-            self.shapers[1].params.damping_ratio = self._config['axis_y']['damping_ratio']
+            for _i, _ax in enumerate(("x", "y")):
+                _c = self._config['axis_' + _ax]
+                _t = _c['type']
+                if _t != self.shapers[_i].get_type():
+                    _neu = self.shaper_factory._create_shaper(_ax, _t)
+                    if _neu is not None:
+                        self.shapers[_i] = _neu
+                _p = self.shapers[_i].params
+                if hasattr(_p, 'smoother_freq'):
+                    _p.smoother_freq = _c['freq']
+                else:
+                    _p.shaper_freq = _c['freq']
+                    _p.damping_ratio = _c['damping_ratio']
         self._update_input_shaping(error=self.printer.config_error)
 
     def _shaper_params_persistable(self):
-        # The Snapmaker JSON persistence only knows the classic frequency
-        # based input shapers. The input smoothers and custom shapers do not
-        # carry these parameters, so they are not stored in the JSON file.
-        return all(isinstance(s.params, TypedInputShaperParams)
+        # The Snapmaker JSON persistence knows the classic frequency based
+        # input shapers and the input smoothers (the latter store their
+        # smoother_freq in the 'freq' field). Custom shapers do not carry
+        # these parameters, so they are not stored in the JSON file.
+        return all(isinstance(s.params, (TypedInputShaperParams,
+                                         TypedInputSmootherParams))
                    for s in self.shapers)
 
     def _save_input_shaper_params(self):
         if self._config is None or not self._shaper_params_persistable():
             return True
-        self._config['axis_x']['type'] = self.shapers[0].params.shaper_type
-        self._config['axis_x']['freq'] = self.shapers[0].params.shaper_freq
-        self._config['axis_x']['damping_ratio'] = self.shapers[0].params.damping_ratio
-        self._config['axis_y']['type'] = self.shapers[1].params.shaper_type
-        self._config['axis_y']['freq'] = self.shapers[1].params.shaper_freq
-        self._config['axis_y']['damping_ratio'] = self.shapers[1].params.damping_ratio
+        for _i, _ax in enumerate(("x", "y")):
+            _p = self.shapers[_i].params
+            _c = self._config['axis_' + _ax]
+            _c['type'] = self.shapers[_i].get_type()
+            if hasattr(_p, 'smoother_freq'):
+                _c['freq'] = _p.smoother_freq
+            else:
+                _c['freq'] = _p.shaper_freq
+            _c['damping_ratio'] = getattr(_p, 'damping_ratio', 0.1)
         ret = self.printer.update_snapmaker_config_file(self._config_path, self._config, DEFAULT_SHAPER_CONFIG)
         if not ret:
             logging.error("save input_shaper config failed!")
