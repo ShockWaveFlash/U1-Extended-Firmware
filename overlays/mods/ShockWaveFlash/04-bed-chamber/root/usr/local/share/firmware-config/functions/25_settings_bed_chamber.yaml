@@ -5,7 +5,7 @@ settings:
       bed_maxtemp:
         label: "Höchsttemperatur des Betts"
         description: >-
-          Hebt die zulässige Höchsttemperatur des Heizbetts an, ab Werk 110 °C. <br>Der
+          Hebt die zulässige Höchsttemperatur des Heizbetts an, ab Werk 100 °C. <br>Der
           Schalter heizt nichts — er erlaubt lediglich, im Slicer oder in der Oberfläche
           höhere Werte einzustellen. Gebraucht wird das für Hochtemperatur-Kunststoffe
           wie ABS, ASA oder PC, die von einem heißeren Bett profitieren. <br>⚠ Oberhalb
@@ -22,19 +22,40 @@ settings:
             if [ ! -f "$f" ]; then echo default; exit 0; fi
             v=$(grep -m1 '^max_temp:' "$f" | awk '{print $2}')
             case "$v" in
+              100) echo default ;;
               115) echo p115 ;;
               120) echo p120 ;;
               *) echo custom ;;
             esac
         options:
           default:
-            label: "Werkseinstellung (110 °C)"
+            label: "Werkseinstellung (100 °C)"
             cmd:
               - bash
               - -xc
               - |
-                rm -f /oem/printer_data/config/extended/klipper/bed_maxtemp.cfg &&
-                echo "Bed max_temp back to stock (110C). Restarting Klipper..." &&
+                # 2026-08-25 (Audit-Befund, hoch): Frueher wurde die Datei hier nur
+                # GELOESCHT. Das wirkte nur bis zum naechsten Neustart, weil Overlay 06
+                # dieselbe Datei mit max_temp 120 als Image-Vorlage mitliefert und
+                # S49extended-config sie per `cp -rn` wieder herstellt, sobald sie
+                # fehlt. Der Knopf sah also aus, als haette er gewirkt, und war beim
+                # naechsten Hochfahren rueckgaengig gemacht. Jetzt wird der Werkswert
+                # ausdruecklich hineingeschrieben - eine vorhandene Datei fasst
+                # `cp -rn` nicht an, damit haelt die Einstellung.
+                # ⚠ Der Werkswert dieses Geraets ist 100, NICHT 110: Auslieferungsstand
+                # printer.cfg -> min_temp 0 / max_temp 100 / max_temp_overshoot 10
+                # (gegengeprueft in printer-20260627_152329.cfg, printer1.cfg und der
+                # Werksquelle /root/u1-klipper/lava/printer.cfg auf CT 105).
+                printf '%s\n' \
+                  '# Werkseinstellung, gesetzt ueber Settings > Bed & Chamber.' \
+                  '# Werkswert dieses Geraets: 100 C (nicht 110).' \
+                  '' \
+                  '[heater_bed]' \
+                  'max_temp: 100' \
+                  > /oem/printer_data/config/extended/klipper/bed_maxtemp.cfg &&
+                chown lava:lava /oem/printer_data/config/extended/klipper/bed_maxtemp.cfg &&
+                chmod 644 /oem/printer_data/config/extended/klipper/bed_maxtemp.cfg &&
+                echo "Bed max_temp back to stock (100C). Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           p115:
             label: "115 °C"
@@ -52,7 +73,7 @@ settings:
             label: "120 °C"
             confirm: >-
               Höchsttemperatur des Betts auf 120 °C anheben, den Höchstwert dieser
-              Erweiterung? ⚠ Das liegt deutlich über der Werksgrenze von 110 °C — vorher
+              Erweiterung? ⚠ Das liegt deutlich über der Werksgrenze von 100 °C — vorher
               sicherstellen, dass Druckplatte, Klebeschicht und Kabel das aushalten.
               Dauerhaft hohe Betttemperaturen belasten Heizung und Netzteil. Klipper
               startet neu.
@@ -66,7 +87,7 @@ settings:
             label: "Eigener Wert…"
             confirm: >-
               Eigene Höchsttemperatur fürs Bett setzen (111–120 °C)? ⚠ Oberhalb der
-              Werksgrenze von 110 °C — nur so weit anheben, wie Druckplatte,
+              Werksgrenze von 100 °C — nur so weit anheben, wie Druckplatte,
               Klebeschicht und Verkabelung es zulassen. Klipper startet neu.
             inputs:
               - name: BED_MAX
