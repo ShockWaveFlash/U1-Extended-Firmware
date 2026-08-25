@@ -111,3 +111,7 @@ echo "⚠ Sollte SAVE_CONFIG mit einem Fehler abbrechen, weil control: mpc aus e
 echo "  eingebundenen Datei stammt: den Schalter \"Verhalten bei unbekannten"
 echo "  Konfigurationsoptionen\" unberuehrt lassen und stattdessen die im Protokoll"
 echo "  ausgegebenen Modellwerte von Hand in kalico_hotend_control.cfg eintragen."
+echo ""
+echo "★ Nach dem SAVE_CONFIG die Werte gegen den naechsten Flash sichern:"
+echo "     /usr/local/share/firmware-config/kalico/mpc-modelle-sichern.sh"
+echo "  Sonst sind sie weg, sobald die printer.cfg durch die Werksversion ersetzt wird."
