@@ -547,25 +547,34 @@ class ResonanceTester:
         if input_shaper is None:
             return
 
+        # Input smoothers carry smoother_freq instead of shaper_freq, and their
+        # type is only reachable via get_type() -- see input_shaper.py.
+        def _freq_and_type(axis_shaper):
+            params = axis_shaper.params
+            freq = getattr(params, 'smoother_freq', None)
+            if freq is None:
+                freq = params.shaper_freq
+            return freq, axis_shaper.get_type()
+
         # axis X
-        freq_start = input_shaper.shapers[0].params.shaper_freq - abs(self.delta_freq)
+        cur_freq, shaper_type = _freq_and_type(input_shaper.shapers[0])
+        freq_start = cur_freq - abs(self.delta_freq)
         if (freq_start < self.generator.vibration_generator.min_freq):
             freq_start = self.generator.vibration_generator.min_freq
-        freq_end = input_shaper.shapers[0].params.shaper_freq + abs(self.delta_freq)
+        freq_end = cur_freq + abs(self.delta_freq)
         if (freq_end > self.generator.vibration_generator.max_freq):
             freq_end = self.generator.vibration_generator.max_freq
-        shaper_type = input_shaper.shapers[0].params.shaper_type
         command = "SHAPER_CALIBRATE AXIS=x SHAPER_TYPES=%s FREQ_START=%d FREQ_END=%d" % (shaper_type, freq_start, freq_end)
         gcode.run_script_from_command(command)
 
         # axis Y
-        freq_start = input_shaper.shapers[1].params.shaper_freq - abs(self.delta_freq)
+        cur_freq, shaper_type = _freq_and_type(input_shaper.shapers[1])
+        freq_start = cur_freq - abs(self.delta_freq)
         if (freq_start < self.generator.vibration_generator.min_freq):
             freq_start = self.generator.vibration_generator.min_freq
-        freq_end = input_shaper.shapers[1].params.shaper_freq + abs(self.delta_freq)
+        freq_end = cur_freq + abs(self.delta_freq)
         if (freq_end > self.generator.vibration_generator.max_freq):
             freq_end = self.generator.vibration_generator.max_freq
-        shaper_type = input_shaper.shapers[1].params.shaper_type
         command = "SHAPER_CALIBRATE AXIS=y SHAPER_TYPES=%s FREQ_START=%d FREQ_END=%d" % (shaper_type, freq_start, freq_end)
         gcode.run_script_from_command(command)
 
