@@ -245,8 +245,16 @@ settings:
                 echo "AutoTune (motor DB) disabled. Restarting Klipper..." &&
                 /etc/init.d/S60klipper restart
           ldo2504_auto:
-            label: "LDO-2504 (automatisch, für XY = kräftig)"
+            label: "LDO-2504 (automatisch)"
             confirm: >-
+              ⚠ ACHTUNG U1: Das ZERSTÖRT das sensorlose Homing. AutoTune setzt
+              sg4_filt_en=1 — StallGuard mittelt dann über eine volle elektrische Umdrehung
+              und erkennt den Anschlag zu spät. Am 2026-08-06 zweimal gemessen:
+              distance_diff 0,68–1,47 mm statt der erlaubten 0,01, bis zu neun
+              Wiederholungen, dann Abbruch. Betrifft alle vier Ziele gleichermaßen, einen
+              Abschalter dafür gibt es im Plugin nicht (klipper_tmc_autotune #154/#145,
+              TMC2240-spezifisch).
+              <br>
               Selbstabstimmung für die LDO-42STH48-2504MAC(F) einschalten, Ziel
               „automatisch“? Nur mit tatsächlich eingebauten LDO-2504-Motoren wählen.
               Schaltet die feste Einstellung „TMC AutoTune“ ab. Beim ersten Einsatz die
@@ -267,6 +275,14 @@ settings:
           ldo2504_perf:
             label: "LDO-2504 (kräftig)"
             confirm: >-
+              ⚠ ACHTUNG U1: Das ZERSTÖRT das sensorlose Homing. AutoTune setzt
+              sg4_filt_en=1 — StallGuard mittelt dann über eine volle elektrische Umdrehung
+              und erkennt den Anschlag zu spät. Am 2026-08-06 zweimal gemessen:
+              distance_diff 0,68–1,47 mm statt der erlaubten 0,01, bis zu neun
+              Wiederholungen, dann Abbruch. Betrifft alle vier Ziele gleichermaßen, einen
+              Abschalter dafür gibt es im Plugin nicht (klipper_tmc_autotune #154/#145,
+              TMC2240-spezifisch).
+              <br>
               Selbstabstimmung mit Ziel „kräftig“ einschalten? Der Treiber arbeitet dann
               bei allen Geschwindigkeiten im harten Modus: mehr Drehmoment, dafür lauter
               und wärmer. Nur mit eingebauten LDO-2504-Motoren. Schaltet die feste
@@ -287,6 +303,14 @@ settings:
           ldo2504_silent:
             label: "LDO-2504 (leise)"
             confirm: >-
+              ⚠ ACHTUNG U1: Das ZERSTÖRT das sensorlose Homing. AutoTune setzt
+              sg4_filt_en=1 — StallGuard mittelt dann über eine volle elektrische Umdrehung
+              und erkennt den Anschlag zu spät. Am 2026-08-06 zweimal gemessen:
+              distance_diff 0,68–1,47 mm statt der erlaubten 0,01, bis zu neun
+              Wiederholungen, dann Abbruch. Betrifft alle vier Ziele gleichermaßen, einen
+              Abschalter dafür gibt es im Plugin nicht (klipper_tmc_autotune #154/#145,
+              TMC2240-spezifisch).
+              <br>
               Selbstabstimmung mit Ziel „leise“ einschalten? Der Treiber bleibt bei
               allen Geschwindigkeiten im Flüstermodus: am leisesten und bei niedrigem
               bis mittlerem Tempo oft mit weniger feinen Oberflächenmustern, aber mit
@@ -310,6 +334,14 @@ settings:
           ldo2504_autoswitch:
             label: "LDO-2504 (Moduswechsel, erprobend)"
             confirm: >-
+              ⚠ ACHTUNG U1: Das ZERSTÖRT das sensorlose Homing. AutoTune setzt
+              sg4_filt_en=1 — StallGuard mittelt dann über eine volle elektrische Umdrehung
+              und erkennt den Anschlag zu spät. Am 2026-08-06 zweimal gemessen:
+              distance_diff 0,68–1,47 mm statt der erlaubten 0,01, bis zu neun
+              Wiederholungen, dann Abbruch. Betrifft alle vier Ziele gleichermaßen, einen
+              Abschalter dafür gibt es im Plugin nicht (klipper_tmc_autotune #154/#145,
+              TMC2240-spezifisch).
+              <br>
               Selbstabstimmung mit Ziel „Moduswechsel“ einschalten? ⚠ Erprobend: leise
               bei niedrigem Tempo, Wechsel in den kräftigen Modus, sobald mehr
               Drehmoment nötig wird. Der Wechsel selbst kann mitten im Druck sichtbare
