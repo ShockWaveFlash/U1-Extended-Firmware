@@ -2,7 +2,7 @@
 +++ b/usr/local/share/firmware-config/extended/extended2.cfg
 @@ -9,7 +9,7 @@
  remote_screen: false
- 
+
  [camera]
 -# Internal (Case) camera options: paxx12, snapmaker, none
 +# Internal (Case) camera options: paxx12-ai, paxx12, snapmaker, none

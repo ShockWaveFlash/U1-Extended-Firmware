@@ -7,11 +7,11 @@
 +    {% for section in printer.configfile.config if section.startswith("gcode_macro _PRINT_START_") %}
 +        { section[12:] }
 +    {% endfor %}
- 
+
  [gcode_macro PRINT_PRESTART_CHECK]
  gcode:
-@@ -215,6 +218,9 @@
- 
+@@ -215,6 +215,9 @@
+
  [gcode_macro PRINT_END]
  gcode:
 +    {% for section in printer.configfile.config if section.startswith("gcode_macro _PRINT_END_") %}
@@ -20,7 +20,7 @@
      ##### get user parameters or use default #####
      {% set client = printer['gcode_macro _CLIENT_VARIABLE'] | default({}) %}
      {% set retract = client.cancel_retract | default(5.0) | abs %}
-@@ -279,6 +285,9 @@
+@@ -279,7 +279,10 @@
  description: Cancel the actual running print
  rename_existing: CANCEL_PRINT_BASE
  gcode:
@@ -30,3 +30,4 @@
      ##### get user parameters or use default #####
      {% set client = printer['gcode_macro _CLIENT_VARIABLE'] | default({}) %}
      {% set retract = client.cancel_retract | default(5.0) | abs %}
+     {% set move_z_max_heigh = client.move_z_max_heigh | default(270.5) | abs %}
