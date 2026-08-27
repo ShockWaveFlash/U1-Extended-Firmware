@@ -41,7 +41,16 @@ DEFAULT_CONFIG = {
     "sen_high_factor": SENSITIVITY_VALUE_HIGH,
     'sen_low_factor': SENSITIVITY_VALUE_LOW,
     'clean_bed': {
-        'enable': True,
+        # 2026-08-27: Fremdkoerper-Pruefung des Betts ab Werk AUS.
+        # Das Modell bed_check erkennt die Panda-Breath-Luftfiltereinheit im
+        # Kammerhintergrund als "item" (0,94-0,95 gegen Schwelle 0,83). Sichtbar ist sie
+        # nur, solange das Bett tief steht; steht es hoch, verdeckt die Druckplatte sie
+        # und es gibt gar keine Detektion (max_prob 0.0) - daher 5 Fehlalarme bei 12
+        # Bettpruefungen. An der Empfindlichkeit ist nichts zu holen: SENSITIVITY_LOW ist
+        # bereits die STRENGERE Stufe (0,83 gegen 0,80 bei high), und check_window wird
+        # fuer clean_bed nie ausgewertet - nur noodle und residue lesen es.
+        # Zur Laufzeit jederzeit zurueck: DEFECT_DETECTION_CONFIG CLEAN_BED_ENABLE=1
+        'enable': False,
         'check_window': CLEAN_BED_CHECK_WINDOW,
         'sensitivity': SENSITIVITY_LOW,
     },
