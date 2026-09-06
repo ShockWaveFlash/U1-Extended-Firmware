@@ -62,11 +62,16 @@ settings:
                 /etc/init.d/S60klipper restart
                 /etc/init.d/S61moonraker restart
           force_generic:
-            label: Enabled (Force Generic Vendor)
-            confirm: "Enable Spoolman integration with Force Generic Vendor? Enter the Spoolman server URL below.\n\nNon-Snapmaker filament vendors will be exposed to the U1 as Generic while Spoolman metadata and tracking remain unchanged."
+            label: "Ein (Fremdhersteller als Generic melden)"
+            confirm: >-
+              Spulenverwaltung einschalten und Fremdhersteller als „Generic" melden?
+              Unten die Adresse des Spoolman-Servers eintragen. Filament anderer
+              Hersteller als Snapmaker wird dem Drucker damit als „Generic" gemeldet —
+              nötig, weil der U1 fremde Herstellernamen sonst zurückweist. In Spoolman
+              selbst bleiben Herstellerangaben und Verbrauchsbuchung unverändert.
             inputs:
               - name: SPOOLMAN_URL
-                label: Spoolman URL
+                label: "Adresse des Spoolman-Servers"
                 placeholder: "http://192.168.1.100:7912"
                 regex: "^https?://.+"
             cmd:
