@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-PackageHomePage: https://github.com/paxx12-snapmaker-u1/SnapmakerU1-Extended-Firmware
+# SPDX-FileCopyrightText: Copyright (c) 2026 @paxx12
+
+settings:
+  snapmaker_components:
+    items:
+      chamber_heater:
+        options:
+          auto:
+            label: "Panda Automatik (empfohlen)"
+            confirm: |
+              ⚠⚠ Panda Breath hält den Innenraum dauerhaft deutlich wärmer. Elektronik, Motoren und Kunststoffteile arbeiten dann jenseits dessen, wofür sie ausgelegt sind, und altern schneller. Schäden durch diese Wärmebelastung sind vermutlich kein Garantiefall. Vor dem Einsatz MUSS die Hauptplatine zusätzlich gekühlt werden — Näheres in der Dokumentation.
+
+              Vor dem Einschalten der Betriebsart „Automatik“ alle folgenden Schritte erledigen:
+
+              1. Zusätzliche aktive Kühlung an der Hauptplatine anbringen (siehe Dokumentation).
+              2. Sicherstellen, dass auf dem Panda-Breath-Gerät die Firmware 1.0.3 läuft.
+              3. Im Router eine feste Adresse für DIESEN DRUCKER vergeben — seine Adresse wird im Panda-Breath-Gerät hinterlegt und darf sich nach einem Neustart nicht ändern.
+              4. Im Router auch für das Panda-Breath-Gerät eine feste Adresse vergeben — Klipper spricht es bei jedem Druck über die Adresse an.
+              5. Das Panda-Breath-Gerät stromlos machen und mindestens 5 Sekunden warten.
+              6. Unten die Adresse des Panda-Breath-Geräts eintragen.
+
+              In der Automatik heizt zunächst Klipper den Innenraum auf; das Halten der Temperatur und das Abkühlen übernimmt danach die Eigenautomatik des Geräts.
+
+              (Läuft auf der Platine stattdessen die freie Firmware DragonBreath, unten die Betriebsart „DragonBreath“ wählen.)
+            inputs:
+              - name: ACKNOWLEDGED
+                label: >-
+                  Zum Bestätigen I UNDERSTAND eintippen — damit wird bestätigt, dass die
+                  Dokumentation gelesen wurde und die Risiken für Garantie und
+                  Lebensdauer angenommen werden
+                placeholder: "I UNDERSTAND"
+                regex: '^I UNDERSTAND$'
+              - name: PANDA_BREATH_IP
+                label: "Netzadresse des Panda-Breath-Geräts"
+                placeholder: "192.168.1.100"
+                regex: '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'
+            cmd:
+              - bash
+              - -ec
+              - |
+                CFG=/oem/printer_data/config/extended/klipper
+                if test -f "$CFG/dragonbreath.cfg"; then
+                  echo "ERROR: DragonBreath is currently enabled. Set the chamber heater to"
+                  echo "       Disabled first, then enable Panda Auto."
+                  exit 1
+                fi
+
+                echo ""
+                echo ">> Detecting printer IP address..."
+                PRINTER_IP=$((ip -4 -o addr show eth0 2>/dev/null || ip -4 -o addr show wlan0 2>/dev/null) | awk '{print $4}' | cut -d/ -f1)
+
+                echo ""
+                echo ">> Binding Panda Breath at ${PANDA_BREATH_IP} to printer at ${PRINTER_IP}..."
+                /usr/local/bin/panda_breath_cli.py --host "${PANDA_BREATH_IP}" bind-klipper --printer-ip "${PRINTER_IP}"
+
+                echo ""
+                echo ">> Writing configuration..."
+                mkdir -p "$CFG"
+                cp -n /usr/local/share/firmware-config/tweaks/klipper/panda_breath.cfg "$CFG/panda_breath.cfg"
+                /usr/local/bin/extended-config.py add "$CFG/panda_breath.cfg" panda_breath host "${PANDA_BREATH_IP}"
+                /usr/local/bin/extended-config.py uncomment "$CFG/panda_breath.cfg" "include /usr/local/share/firmware-config/tweaks/klipper/panda_breath_heater_auto.cfg"
+                /usr/local/bin/extended-config.py comment "$CFG/panda_breath.cfg" "include /usr/local/share/firmware-config/tweaks/klipper/panda_breath_heater_manual.cfg"
+                chown lava:lava "$CFG/panda_breath.cfg"
+
+                echo ""
+                echo ">> Panda Breath auto mode enabled. Restarting Klipper..."
+                /etc/init.d/S60klipper restart
+          manual:
+            label: "Von Hand (für Fortgeschrittene)"
+            hidden: true
+            confirm: >-
+              ⚠⚠ Panda Breath hält den Innenraum dauerhaft deutlich wärmer. Elektronik,
+              Motoren und Kunststoffteile arbeiten dann jenseits dessen, wofür sie
+              ausgelegt sind, und altern schneller. Schäden durch diese Wärmebelastung
+              sind vermutlich kein Garantiefall. Vor dem Einsatz MUSS die Hauptplatine
+              zusätzlich gekühlt werden — Näheres in der Dokumentation. Vor dem
+              Einschalten der Betriebsart „Von Hand“ alle folgenden Schritte erledigen:
+              1. Zusätzliche aktive Kühlung an der Hauptplatine anbringen. 2.
+              Sicherstellen, dass auf dem Panda-Breath-Gerät die Firmware 1.0.3 läuft.
+              3. Im Router eine feste Adresse für DIESEN DRUCKER vergeben — seine
+              Adresse wird im Panda-Breath-Gerät hinterlegt und darf sich nach einem
+              Neustart nicht ändern. 4. Im Router auch für das Panda-Breath-Gerät eine
+              feste Adresse vergeben — Klipper spricht es bei jedem Druck über die
+              Adresse an. 5. Das Panda-Breath-Gerät stromlos machen und mindestens 5
+              Sekunden warten. 6. Unten die Adresse des Panda-Breath-Geräts eintragen. ⚠
+              Die Betriebsart „Von Hand“ ist ein Überbleibsel aus früheren Fassungen.
+              Sie ist weniger sicher: Fällt das Gerät oder die Netzverbindung während
+              eines Drucks aus, bemerkt der Drucker das nicht zuverlässig.
+            inputs:
+              - name: ACKNOWLEDGED
+                label: >-
+                  Zum Bestätigen I UNDERSTAND eintippen — damit wird bestätigt, dass die
+                  Dokumentation gelesen wurde und die Risiken für Garantie und
+                  Lebensdauer angenommen werden
+                placeholder: "I UNDERSTAND"
+                regex: '^I UNDERSTAND$'
+              - name: PANDA_BREATH_IP
+                label: "Netzadresse des Panda-Breath-Geräts"
+                placeholder: "192.168.1.100"
+                regex: '^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$'
+            cmd:
+              - bash
+              - -ec
+              - |
+                CFG=/oem/printer_data/config/extended/klipper
+                if test -f "$CFG/dragonbreath.cfg"; then
+                  echo "ERROR: DragonBreath is currently enabled. Set the chamber heater to"
+                  echo "       Disabled first, then enable Panda Manual."
+                  exit 1
+                fi
+
+                echo ""
+                echo ">> Detecting printer IP address..."
+                PRINTER_IP=$((ip -4 -o addr show eth0 2>/dev/null || ip -4 -o addr show wlan0 2>/dev/null) | awk '{print $4}' | cut -d/ -f1)
+
+                echo ""
+                echo ">> Binding Panda Breath at ${PANDA_BREATH_IP} to printer at ${PRINTER_IP}..."
+                /usr/local/bin/panda_breath_cli.py --host "${PANDA_BREATH_IP}" bind-klipper --printer-ip "${PRINTER_IP}"
+
+                echo ""
+                echo ">> Writing configuration..."
+                mkdir -p "$CFG"
+                cp -n /usr/local/share/firmware-config/tweaks/klipper/panda_breath.cfg "$CFG/panda_breath.cfg"
+                /usr/local/bin/extended-config.py add "$CFG/panda_breath.cfg" panda_breath host "${PANDA_BREATH_IP}"
+                /usr/local/bin/extended-config.py comment "$CFG/panda_breath.cfg" "include /usr/local/share/firmware-config/tweaks/klipper/panda_breath_heater_auto.cfg"
+                /usr/local/bin/extended-config.py uncomment "$CFG/panda_breath.cfg" "include /usr/local/share/firmware-config/tweaks/klipper/panda_breath_heater_manual.cfg"
+                chown lava:lava "$CFG/panda_breath.cfg"
+                ln -sf /usr/local/share/firmware-config/tweaks/klipper/panda_breath_heater_manual.cfg "$CFG/panda_breath_heater.cfg"
+
+                echo ""
+                echo ">> Panda Breath manual mode enabled. Restarting Klipper..."
+                /etc/init.d/S60klipper restart

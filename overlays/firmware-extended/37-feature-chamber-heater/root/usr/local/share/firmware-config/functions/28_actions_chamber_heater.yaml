@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-PackageHomePage: https://github.com/paxx12-snapmaker-u1/SnapmakerU1-Extended-Firmware
+# SPDX-FileCopyrightText: Copyright (c) 2026 @plastikman
+
+quick_actions:
+  chamber_heater:
+    items:
+      migrate-to-dragonbreath:
+        label: "Auf DragonBreath umstellen"
+        description: >-
+          Eine Panda-Breath-Innenraumheizung ist eingerichtet. Sie lässt sich auf die
+          freie Firmware DragonBreath umstellen — über WLAN, ohne USB-Kabel. Freiwillig;
+          ohne diesen Schritt läuft Panda Breath unverändert weiter.
+        # Only shown while Panda Breath is the active chamber-heater integration and
+        # DragonBreath is not already enabled. Purely opt-in — nothing runs this
+        # automatically, and declining leaves Panda Breath untouched.
+        if_cmd: test -f /oem/printer_data/config/extended/klipper/panda_breath.cfg -a ! -f /oem/printer_data/config/extended/klipper/dragonbreath.cfg
+        confirm: |
+          INNENRAUMHEIZUNG AUF DRAGONBREATH UMSTELLEN (über WLAN — ohne USB)
+
+          Das ist freiwillig — ohne diesen Schritt läuft Panda Breath unverändert weiter. Wer auf die freie Firmware DragonBreath auf derselben Platine wechseln möchte, bekommt sie hier über das Heimnetz aufgespielt: kein USB-Kabel, und weder Drucker noch Panda brauchen dafür eine Internetverbindung.
+
+          Was beim Bestätigen geschieht:
+          1. Die mitgelieferte DragonBreath-Firmware wird über WLAN auf das Panda-Breath-Gerät geschrieben. Die Werksfirmware bleibt im Sicherungsbereich des Geräts liegen, ein Rückweg auf Werk ist also jederzeit möglich.
+          2. Das Gerät meldet sich selbsttätig wieder im WLAN und bei Moonraker an (die gespeicherten Einstellungen werden übernommen, keine Neueinrichtung nötig).
+          3. Die Klipper-Konfiguration wird auf DragonBreath umgestellt und Klipper startet neu.
+
+          ⚠⚠ Eine Innenraumheizung hält das Gehäuse dauerhaft deutlich wärmer. Elektronik und Motoren altern dadurch schneller — vermutlich kein Garantiefall. DragonBreath ist freie Firmware aus der Gemeinschaft für ein NETZBETRIEBENES Heizgerät und wird OHNE GEWÄHRLEISTUNG bereitgestellt; niemals unbeaufsichtigt laufen lassen. Die Hauptplatine muss zusätzlich gekühlt werden (siehe Dokumentation).
+
+          Zum Umstellen bestätigen. Bei Abbruch bleibt Panda Breath in Betrieb — die Umstellung ist später jederzeit möglich, ebenso das eigenhändige Flashen mit anschließender Wahl der Betriebsart „DragonBreath“.
+        message: "Panda Breath wird auf DragonBreath umgestellt (Drucker und Panda-Gerät jetzt nicht stromlos machen)..."
+        cmd:
+          - bash
+          - -ec
+          - |
+            CFG=/oem/printer_data/config/extended/klipper
+
+            if ! test -f "$CFG/panda_breath.cfg"; then
+              echo "ERROR: No Panda Breath configuration found — nothing to migrate."
+              exit 1
+            fi
+            if test -f "$CFG/dragonbreath.cfg"; then
+              echo "ERROR: DragonBreath is already enabled."
+              exit 1
+            fi
+
+            HOST=$(/usr/local/bin/extended-config.py get "$CFG/panda_breath.cfg" panda_breath host 2>/dev/null || true)
+            if test -z "$HOST"; then
+              echo "ERROR: Could not read the Panda Breath host/IP from panda_breath.cfg."
+              exit 1
+            fi
+            echo ">> Panda Breath device: ${HOST}"
+
+            echo ""
+            echo ">> Flashing DragonBreath over Wi-Fi (this can take a minute; do not power off)..."
+            # Idempotent: if the device already reports DragonBreath (a prior run flashed
+            # but didn't finish the cfg swap) it skips the flash. Image is the bundled
+            # local copy — no internet.
+            /usr/local/bin/dragonbreath_migrate.py --host "${HOST}" migrate
+
+            echo ""
+            echo ">> Unbinding Panda Breath and switching Klipper to DragonBreath..."
+            /usr/local/bin/panda_breath_cli.py --host "${HOST}" unbind || true
+            mkdir -p "$CFG"
+            cp -n /usr/local/share/firmware-config/tweaks/klipper/dragonbreath.cfg "$CFG/dragonbreath.cfg"
+            /usr/local/bin/extended-config.py add "$CFG/dragonbreath.cfg" dragonbreath host "${HOST}"
+            chown lava:lava "$CFG/dragonbreath.cfg"
+            rm -f "$CFG/panda_breath.cfg"
+
+            echo ""
+            echo ">> Migration complete. Restarting Klipper..."
+            /etc/init.d/S60klipper restart
