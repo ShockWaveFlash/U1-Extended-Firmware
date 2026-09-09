@@ -94,7 +94,7 @@
         0
     ],
     "extruders_used": [
-        true,
+        false,
         false,
         false,
         false
@@ -106,8 +106,8 @@
         3
     ],
     "time_lapse_camera": false,
-    "auto_bed_leveling": true,
-    "flow_calibrate": true,
+    "auto_bed_leveling": false,
+    "flow_calibrate": false,
     "flow_calib_extruders": [
         true,
         true,

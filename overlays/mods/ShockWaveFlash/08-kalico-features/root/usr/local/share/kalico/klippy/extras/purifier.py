@@ -352,7 +352,7 @@ class Purifier:
         system_time += FAN_MIN_TIME
         print_time = self._exhaust_fan.fan.get_mcu().estimated_print_time(system_time)
         print_time = max(self.last_print_time + FAN_MIN_TIME, print_time)
-        self._exhaust_fan.fan.set_speed(print_time, speed)
+        self._exhaust_fan.fan.set_speed(value=speed, print_time=print_time)
         print_time += 0.01
         self._set_power_enable(print_time)
         self.last_print_time = print_time
@@ -378,7 +378,7 @@ class Purifier:
         system_time += FAN_MIN_TIME
         print_time = self._inner_fan.fan.get_mcu().estimated_print_time(system_time)
         print_time = max(self.last_print_time + FAN_MIN_TIME, print_time)
-        self._inner_fan.fan.set_speed(print_time, speed)
+        self._inner_fan.fan.set_speed(value=speed, print_time=print_time)
         print_time += 0.01
         self._set_power_enable(print_time)
         self.last_print_time = print_time
