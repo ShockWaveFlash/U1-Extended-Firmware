@@ -1,0 +1,6 @@
+# Z motion limits override
+# Managed by firmware-config (Settings > Z Axis). Do not edit manually.
+
+[printer]
+max_z_velocity: 20
+max_z_accel: 300

@@ -1,0 +1,10 @@
+# Startwerte fuer den Input Shaper. Massgeblich ist zur Laufzeit die JSON
+# (printer_data/config/snapmaker/input_shaper.json) - sie wird in
+# InputShaper.connect() angewandt und gewinnt gegen diese Datei. Diese Werte
+# greifen nur beim allerersten Start ohne JSON.
+# 2026-08-25: von mzv 52,6/46,0 auf den gemessenen Smooth-Stand gezogen.
+[input_shaper]
+shaper_type_x: smooth_mzv
+shaper_freq_x: 51.2
+shaper_type_y: smooth_mzv
+shaper_freq_y: 46.0

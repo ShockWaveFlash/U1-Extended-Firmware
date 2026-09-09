@@ -65,3 +65,12 @@ stream_url = /screen/
 snapshot_url = /screen/snapshot
 aspect_ratio = 480:320
 
+[spoolman]
+server = http://192.168.178.86:7912
+sync_rate = 5
+
+[spoollink]
+server = http://192.168.178.86:7912
+cache_dir = /oem/printer_data/config/extended/spoollink
+force_generic_vendor = false
+

@@ -1,0 +1,26 @@
+# Input Shaper - Startwerte, Stand der Kalibrierung vom 2026-08-22 00:34.
+# Quelle: /oem/printer_data/config/snapmaker/input_shaper.json
+#   X: mzv 52.6 Hz   Y: mzv 46.0 Hz   (damping_ratio 0.1 = Klipper-Default)
+#   Vorher (18.08.): 55.4 / 48.4 Hz. Beide Frequenzen sind nach dem
+#   High-Flow-Umbau aller vier Koepfe gesunken -- mehr Masse am Werkzeugkopf.
+#   Beide Achsen vibrations = 0.0 %, empfohlenes max_accel <= 6200 (mzv).
+#
+# ROLLE DIESER DATEI (Stand 2026-08-19, am Geraet nachgemessen):
+# Sie liefert nur die beim Start geparsten Werte. Zur LAUFZEIT setzt
+# shaper_persist.cfg die Werte aus der JSON per SET_INPUT_SHAPER - die JSON
+# gewinnt also. Diese Datei ist der Rueckfall fuer den Fall, dass keine JSON
+# existiert (frisches Geraet, Werksreset), damit dann nicht die Werkswerte
+# 54 / 47.5 Hz greifen.
+#
+# ⚠️ Deshalb NICHT aus dieser Datei ablesen, was aktiv ist -- dafuer SHAPER_SHOW
+# aufrufen. "configfile=settings" ueber Moonraker zeigt die geparsten Werte
+# von HIER, nicht die Laufzeitwerte.
+#
+# Bei neuer Kalibrierung die Werte hier nachziehen, sonst driften Datei und
+# Realitaet auseinander (passiert zwischen dem 06.08. und dem 18.08. genau so).
+
+[input_shaper]
+shaper_type_x: mzv
+shaper_freq_x: 52.6
+shaper_type_y: mzv
+shaper_freq_y: 46.0

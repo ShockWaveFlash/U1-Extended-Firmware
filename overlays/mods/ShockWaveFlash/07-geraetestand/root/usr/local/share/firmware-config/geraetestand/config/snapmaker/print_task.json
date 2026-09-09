@@ -6,7 +6,7 @@
         "Snapmaker"
     ],
     "filament_type": [
-        "PCTG",
+        "PETG",
         "PLA",
         "PLA",
         "PLA"
@@ -18,13 +18,13 @@
         "SnapSpeed"
     ],
     "filament_color": [
-        4278190080,
+        4294895013,
         4281990932,
         4278716941,
         4294230066
     ],
     "filament_color_rgba": [
-        "000000FF",
+        "FEE5A5FF",
         "39FF14FF",
         "080A0DFF",
         "F4C032FF"
@@ -94,7 +94,7 @@
         0
     ],
     "extruders_used": [
-        false,
+        true,
         false,
         false,
         false
@@ -106,8 +106,8 @@
         3
     ],
     "time_lapse_camera": false,
-    "auto_bed_leveling": false,
-    "flow_calibrate": false,
+    "auto_bed_leveling": true,
+    "flow_calibrate": true,
     "flow_calib_extruders": [
         true,
         true,
@@ -181,7 +181,7 @@
             "alpha": 255,
             "mode": 0,
             "colors": [
-                "000000"
+                "FEE5A5"
             ]
         },
         {

@@ -1,0 +1,39 @@
+# XY-Homing: Haltestrom waehrend des Homings gleichziehen (last-wins Overlay)
+#
+# Warum: Klipper verbietet hold_current bei Sensorless Homing ausdruecklich:
+# "When using sensorless homing on CoreXY, make sure there is no hold_current
+# configured for either stepper" (klipper3d.org/TMC_Drivers.html). Grund: Steht
+# der Kopf nach dem Stall am Anschlag, aendert der Treiber den Strom -- und das
+# bewegt den Schlitten, verfaelscht also genau den Messpunkt.
+#
+# hold_current laesst sich hier nicht streichen: 0.7 A halten die Motoren kuehl
+# (siehe motor_hold_current.cfg -- ohne standen sie bei 89 Grad und summten).
+# Loesung: waehrend des Homings HOLDCURRENT = HOME_CUR setzen, danach zurueck.
+# Dann gibt es im Kontaktmoment keinen Stromsprung.
+#
+# Ohne diesen Fix stand hold_current (0.7 A) UEBER dem Homing-Laufstrom (0.65 A):
+# der Motor bekam am Anschlag mehr Strom als beim Anfahren.
+#
+# Ersetzt den gcode-Block aus printer.cfg vollstaendig. Die uebrigen Parameter
+# der Section (home_xy_position, z_hop, z_probe_samples ...) bleiben aus
+# printer.cfg gueltig -- last-wins gilt pro Option, nicht pro Section.
+# Angelegt 2026-08-21.
+
+[homing_xyz_override]
+gcode:
+    SET_STEPPER_ENABLE STEPPER=stepper_x ENABLE=1
+    M204 S1000
+    G4 P1000
+    {% set force_calibration = params.FORCE_CALIBRATION|default(0)|int %}
+    {% set HOME_CUR = 0.650 %}
+    {% set driver_config_axes_x = printer.configfile.settings['tmc2240 stepper_x'] %}
+    {% set driver_config_axes_y = printer.configfile.settings['tmc2240 stepper_y'] %}
+    {% set X_RUN_CUR = driver_config_axes_x.run_current %}
+    {% set Y_RUN_CUR = driver_config_axes_y.run_current %}
+    {% set X_HOLD_CUR = driver_config_axes_x.hold_current %}
+    {% set Y_HOLD_CUR = driver_config_axes_y.hold_current %}
+    SET_TMC_CURRENT STEPPER=stepper_x CURRENT={HOME_CUR} HOLDCURRENT={HOME_CUR}
+    SET_TMC_CURRENT STEPPER=stepper_y CURRENT={HOME_CUR} HOLDCURRENT={HOME_CUR}
+    HOMING_PRECISE_COREXY_ADVANCED FORCE_CALIBRATION={force_calibration}
+    SET_TMC_CURRENT STEPPER=stepper_x CURRENT={X_RUN_CUR} HOLDCURRENT={X_HOLD_CUR}
+    SET_TMC_CURRENT STEPPER=stepper_y CURRENT={Y_RUN_CUR} HOLDCURRENT={Y_HOLD_CUR}

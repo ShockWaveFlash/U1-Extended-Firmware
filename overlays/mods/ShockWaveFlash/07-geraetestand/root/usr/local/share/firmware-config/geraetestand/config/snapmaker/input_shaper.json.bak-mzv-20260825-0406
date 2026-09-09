@@ -1,0 +1,12 @@
+{
+    "axis_x": {
+        "type": "mzv",
+        "freq": 51.3999999999999,
+        "damping_ratio": 0.1
+    },
+    "axis_y": {
+        "type": "mzv",
+        "freq": 45.79999999999992,
+        "damping_ratio": 0.1
+    }
+}

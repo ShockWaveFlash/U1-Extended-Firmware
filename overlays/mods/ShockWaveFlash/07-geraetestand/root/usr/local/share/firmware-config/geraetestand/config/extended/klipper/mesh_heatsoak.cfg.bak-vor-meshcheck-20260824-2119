@@ -1,0 +1,116 @@
+# Durchwaermzeit vor der Bett-Nivellierung (Z-Drift-Kompensation).
+# Angelegt 2026-08-18 auf Christophers Ansage ("bei 60-80 ruhig auch ein
+# bisschen hoeher gehen wenn das hilft" / "zb 5 minuten?" / "abs soll aber
+# auch 10 minuten haben, also bei 100 ruhig 10").
+#
+# STAFFELUNG:   ab 90 C -> 10 min     55-89 C -> 5 min     darunter -> nichts
+# Was das bringt (Modell unten, Ist-Zeiten aus klippy.log vom 17.08.):
+# heute liegen zwischen Heizbefehl und erstem Sondenpunkt real 3-5 min.
+#   60 C: Restdrift ~29 um -> ~16 um     80 C: ~41 um -> ~22 um
+#  100 C: Restdrift ~57 um -> ~16 um (10 min)
+#
+# ============================================================================
+# WARUM (eigene Messreihe am Geraet, 17.08.2026 -- s. Memory u1-zdrift-*):
+# Der Rahmen des U1 waechst beim Aufheizen, die Sonde misst dadurch zu frueh
+# ein falsches Bett. Die Annaeherung an den warmen Endzustand ist exponentiell
+# mit einer Zeitkonstante von tau = 8,1 min:
+#     nach  2 min noch 61 um Fehler
+#     nach 13 min noch 12 um
+#     nach 20 min noch  6 um
+# Daraus folgt die einzig belastbare Faustregel: alle tau*ln2 = 5,6 min
+# HALBIERT sich der verbleibende Fehler -- egal bei welcher Temperatur.
+# 5 Minuten zusaetzlich sind also ziemlich genau eine Halbierung.
+# Absolutwerte gegen kalt gemessen: 60 C -48 um, 80 C -68 um, 100 C -93 um
+# (davon Kippung -33 / -47 / -64 um; die kann z_thermal_adjust NICHT).
+#
+# ★ NACHMESSUNG 23.08.2026 (23 Punkte ueber 83 min, Bett 100 C, Kompensation AKTIV,
+# PROBE_ACCURACY an einer Stelle -- also OHNE den Kippungsanteil von oben):
+# Die Annaeherung ist LANGSAMER als am 17.08. gemessen, Halbwertszeit ~7 statt 5,6 min.
+#     nach 15 min noch 23,5 um offen (67 % durch)   <- war die alte Einstellung
+#     nach 20 min noch ~15   um      (79 %)         <- jetzt eingestellt
+#     nach 23 min noch 10,8  um      (85 %)
+#     nach 30 min noch  5,8  um      (92 %)
+#     nach 34 min noch  4,4  um      (94 %) -- ab hier unter dem Sondenrauschen (2,5 um)
+# Deshalb 15 -> 20 min (>=90 C) und 6 -> 10 min (>=55 C). Die 10 min sind eine
+# UEBERTRAGUNG, nicht gemessen -- der 55-C-Fall ist noch offen.
+# Nebenergebnis: temp_coeff 0,0133 ist bestaetigt. Die Restdrift im eingeschwungenen
+# Zustand liegt bei 0,0025 mm/K und damit auf dem Rauschniveau. Die grosse Drift am
+# Anfang laeuft ZEITGETRIEBEN ab, nicht mit der Rahmentemperatur -- kein Koeffizient
+# kann sie auffangen, nur Warten.
+#
+# WARUM HIER UND NICHT IM SLICER:
+# So greift es bei jedem Druck aus jedem Profil, und die Betttemperatur laesst
+# sich zur Laufzeit auslesen -- im Slicer muesste die Staffelung in jedem
+# einzelnen Filamentprofil gepflegt werden.
+#
+# ⚠️ IDLE-TIMEOUT: printer.cfg hat timeout: 300, also exakt 5 Minuten. Ohne
+# Gegenmassnahme wuerden die Motoren MITTEN im Warten abschalten und die
+# Nivellierung liefe nach Positionsverlust. Deshalb wird der Timeout fuer die
+# Dauer des Wartens hochgesetzt und danach auf den Originalwert aus der
+# Konfiguration zurueckgestellt.
+#
+# ⚠️ KEIN TEMPERATURE_WAIT -- feste Zeit. Begruendung steht ausfuehrlich in
+# heat_soak.cfg (hat den Drucker am 06.08. komplett blockiert).
+#
+# WO ES IM DRUCK LANDET (Start-G-Code der Snapmaker-Profile):
+#   ... M190 S<bett>  ->  WAIT_CHAMBER_TEMP TIMEOUT=180  ->  G28 Z
+#   ->  BED_MESH_CALIBRATE PROBE_COUNT=11,11        <- hier haengt sich das ein
+# Die Duese steht zu diesem Zeitpunkt auf Drucktemperatur MINUS 90 C
+# (M109 S{nozzle_temperature - 90}, Zeile 342 der Beispieldatei), auf volle
+# Temperatur geht sie erst NACH dem Mesh. Die Wartezeit kostet also kein
+# Filament und verursacht kein zusaetzliches Oozing.
+#
+# KETTE (Reihenfolge zaehlt, extended/klipper/*.cfg wird alphabetisch geladen):
+#   BED_MESH_CALIBRATE (hier, "m")
+#     -> BED_MESH_CALIBRATE_ADAPTIVE (bed_leveling_adaptive_force.cfg, "b")
+#        -> _BED_MESH_CALIBRATE_BASE (Python)
+# Ohne Wartezeit nivellieren: BED_MESH_CALIBRATE_ADAPTIVE direkt aufrufen.
+# ============================================================================
+
+[gcode_macro _MESH_HEAT_SOAK]
+description: Wartezeit vor der Nivellierung bestimmen und absitzen (Unterroutine)
+gcode:
+    # TARGET und DRYRUN gibt es nur zum Nachpruefen der Staffelung ohne Warten:
+    #   _MESH_HEAT_SOAK TARGET=100 DRYRUN=1
+    {% set t = params.TARGET|default(printer.heater_bed.target)|float %}
+    {% set minutes = 20 if t >= 90 else (10 if t >= 55 else 0) %}
+
+    {% if minutes == 0 %}
+        RESPOND TYPE=echo MSG="Mesh-Soak: Bett {t|round(0)|int} C - keine Wartezeit noetig."
+    {% elif params.DRYRUN|default(0)|int %}
+        RESPOND TYPE=echo MSG="Mesh-Soak (Trockenlauf): Bett {t|round(0)|int} C wuerde {minutes} min warten."
+    {% else %}
+        # Motoren muessen waehrend des Wartens gehalten bleiben, sonst ist die
+        # Z-Referenz aus dem vorangegangenen G28 hin.
+        SET_IDLE_TIMEOUT TIMEOUT={minutes * 60 + 300}
+        RESPOND TYPE=echo MSG="Mesh-Soak: Bett {t|round(0)|int} C - {minutes} min durchwaermen, dann nivellieren."
+        M117 Durchwaermen {minutes} min
+        G4 P{minutes * 60000}
+        SET_IDLE_TIMEOUT TIMEOUT={printer.configfile.settings.idle_timeout.timeout|int}
+        M117 Nivellierung
+    {% endif %}
+
+[gcode_macro BED_MESH_CALIBRATE]
+rename_existing: BED_MESH_CALIBRATE_ADAPTIVE
+description: Bett nivellieren, vorher je nach Betttemperatur durchwaermen
+gcode:
+    # Waehrend eines Drucks die Nivellierung erzwingen: steht in den Druck-
+    # einstellungen "auto_bed_leveling: false", bricht bed_mesh.py die Messung
+    # kommentarlos ab (bed_mesh.py Z.722, nur bei Induktionssonde). FORCE=1 ist
+    # noetig, weil print_task_config.py Z.738 Aenderungen im laufenden Druck sperrt.
+    # Uebernommen aus dem Upstream-Tweak bed_leveling_adaptive_force.cfg, der
+    # denselben Makronamen belegt und dadurch still wirkungslos war.
+    {% if printer.print_stats.state in ["printing", "paused"] %}
+        SET_PRINT_PREFERENCES BED_LEVEL=1 FORCE=1
+    {% endif %}
+    _MESH_HEAT_SOAK
+    # ADAPTIVE=1 hier erzwingen: der Slicer schickt nur PROBE_COUNT=11,11, damit
+    # laeuft die Anpassung ohne jede Slicer-Aenderung bei jedem Druck mit.
+    # bed_mesh.py Z.682 wertet ADAPTIVE erst NACH PROBE_COUNT aus, rechnet also
+    # die 11x11 herunter (belegt 19.08. am Geraet: 40-mm-Objekt -> 3x3).
+    # Nur setzen, wenn der Aufrufer es nicht selbst mitgibt.
+    {% if "ADAPTIVE" in rawparams|upper %}
+        BED_MESH_CALIBRATE_ADAPTIVE {rawparams}
+    {% else %}
+        BED_MESH_CALIBRATE_ADAPTIVE ADAPTIVE=1 {rawparams}
+    {% endif %}

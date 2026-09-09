@@ -1,0 +1,4 @@
+# 2026-08-25: Smooth-Shaper, nutzbar nach dem Patch in input_shaper.py und
+# shaper_calibrate.py (Smoother lesen smoother_freq_*, nicht shaper_freq_*).
+[resonance_tester]
+fixed_shaper: smooth_mzv

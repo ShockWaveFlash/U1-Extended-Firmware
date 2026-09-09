@@ -1,0 +1,21 @@
+# Angelegt 2026-08-22.
+# Zweck: verhindert den Klipper-Shutdown, wenn die Panda Breath ein Kammerziel
+# nicht erreicht ("Heater panda_breath not heating at expected rate").
+# Ausloeser war Ziel 60 C bei real erreichbaren ~46 C -> Shutdown nach 12 s
+# (error += (target-hysteresis)-temp = 10/s gegen max_error 120).
+#
+# hysteresis 45 : verify_heater.py nimmt den sicheren Zweig, solange
+#                 temp >= target - hysteresis. Bei Ziel 60 also ab 15 C Kammer.
+#                 Deckt damit auch den Kaltstart ab.
+# max_error     : zweites Netz, falls die Kammer je unter 15 C liegen sollte.
+# heating_gain / check_gain_time: 0,5 C Anstieg in 15 min genuegen als Fortschritt.
+#
+# WICHTIG: Der Ueberhitzungsschutz bleibt unabhaengig davon aktiv --
+#          _panda_breath_cavity_guard mit limit_c: 70 in panda_breath.cfg.
+# Rueckbau: diese Datei loeschen + FIRMWARE_RESTART.
+
+[verify_heater panda_breath]
+hysteresis: 45
+max_error: 999999
+heating_gain: 0.5
+check_gain_time: 900

@@ -3,7 +3,7 @@
     "sen_high_factor": 0.2,
     "sen_low_factor": 0.5,
     "clean_bed": {
-        "enable": true,
+        "enable": false,
         "check_window": 3,
         "sensitivity": "low"
     },

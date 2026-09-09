@@ -1,0 +1,173 @@
+# Input-Shaper-Ergebnisse dauerhaft sichern - Reparatur einer Fork-Regression.
+#
+#   SHAPER_SERVICE   -> Vibrationsmessung fahren UND das Ergebnis behalten
+#   SHAPER_SAVE      -> nur sichern, was gerade laeuft
+#   SHAPER_SHOW      -> nur anzeigen, was gerade laeuft (aendert nichts)
+#
+# WARUM ES DAS BRAUCHT (Quellcode am Geraet geprueft, 18.08.2026):
+# Snapmaker hat den Upstream-Speicherpfad an drei Stellen auskommentiert:
+#   shaper_calibrate.py:403-410   def save_params(...)   komplett aus
+#   resonance_tester.py:506       der Aufruf davon       aus
+#   resonance_tester.py:527       der Hinweis "The SAVE_CONFIG command will
+#                                 update the printer config file"   aus
+# Im Original-Klipper schreibt SHAPER_CALIBRATE ueber save_params in den
+# Pending-Puffer, den SAVE_CONFIG dann in die printer.cfg uebernimmt. Hier tut
+# es das nicht - und sagt es auch nicht. Jede Messung war beim naechsten
+# Neustart still weg.
+#
+# DER ERSATZWEG DER FIRMWARE: input_shaper.py haelt die Werte in
+#   printer_data/config/snapmaker/input_shaper.json
+# und beim Booten setzt connect() die Shaper-Parameter UNBEDINGT aus dieser
+# JSON - sie schlaegt damit printer.cfg und jedes Overlay.
+# ⚠️ Belegt am 18.08.: es liefen 56,000 / 48,600 Hz aus der JSON, waehrend
+# extended/klipper/input_shaper.cfg 56,6 / 48,8 trug. Wer die Werte in der cfg
+# pflegt, pflegt Karteileichen - die JSON ist die einzige Wahrheit.
+#
+# WIE GESPEICHERT WIRD: die JSON schreibt NUR SET_INPUT_SHAPER, und nur, wenn
+# das Kommando mindestens EINEN Parameter bekommt:
+#     if gcmd.get_command_parameters():  ...  self._save_input_shaper_params()
+# Nicht angegebene Werte holt update() aus dem laufenden Zustand
+#     gcmd.get_float('SHAPER_FREQ_X', self.shaper_freq)
+# Ein beliebiger Dummy-Parameter genuegt also zum Speichern, ohne dass ein
+# einziger Messwert veraendert wird. Genau das macht SHAPER_SAVE.
+#
+# KEIN BOOT-RISIKO durch wilde Frequenzen (Quellcode geprueft 18.08.):
+# connect() (input_shaper.py:141-150) setzt die JSON-Werte OHNE jede
+# Grenzpruefung. Die Grenzen shaper_freq_*_min/max greifen an ganz anderer
+# Stelle - waehrend der Kalibrierung (resonance_tester.py:492-500): liegt die
+# gemessene Frequenz ausserhalb, ersetzt die Firmware sie selbst durch den
+# Default und meldet "Input shaper x frequency out of range, using default".
+# Ueber den Kalibrierweg kann also gar kein unzulaessiger Wert entstehen.
+# ⚠️ Der einzige Weg, doch einen hineinzuschreiben, ist ein von Hand
+# abgesetztes SET_INPUT_SHAPER SHAPER_FREQ_X=<Unsinn> - das geht ungeprueft in
+# die JSON und wird beim Booten ungeprueft geladen. Rueckfall dann per SSH:
+# JSON loeschen oder aus input_shaper.json.bak-* zurueckspielen; ohne die Datei
+# greifen die eingebauten Defaults.
+
+[gcode_macro SHAPER_SHOW]
+description: Zeigt die laufenden Input-Shaper-Werte an (aendert nichts)
+gcode:
+    # Ohne Parameter laeuft der Speicherzweig nicht - es wird nur berichtet.
+    SET_INPUT_SHAPER
+
+[gcode_macro SHAPER_SAVE]
+description: Laufende Input-Shaper-Werte dauerhaft in die JSON schreiben
+gcode:
+    SET_INPUT_SHAPER SAVE=1
+    RESPOND TYPE=echo MSG="Gesichert in snapmaker/input_shaper.json - die oben gemeldeten Werte gelten ab jetzt auch nach einem Neustart."
+
+[gcode_macro SHAPER_SERVICE]
+description: Vibrationsmessung fahren und das Ergebnis dauerhaft sichern
+gcode:
+    {% if printer.print_stats.state in ['printing', 'paused'] %}
+        { action_raise_error("SHAPER_SERVICE: Es laeuft ein Druck - abgebrochen.") }
+    {% endif %}
+
+    RESPOND TYPE=echo MSG="Vibrationsmessung laeuft - einige Minuten, und sie ist laut."
+    M117 Input Shaper: messen
+    SHAPER_CALIBRATE
+
+    # Ohne diese Zeile waere die Messung beim naechsten Neustart verloren.
+    M117 Input Shaper: sichern
+    SHAPER_SAVE
+    M117 Input Shaper fertig
+
+# ---------------------------------------------------------------------------
+# DAMIT AUCH DER TOUCHSCREEN-/MAINSAIL-WEG SPEICHERT
+#
+# Die Firmware definiert in fluidd.cfg:187 einen Wrapper:
+#     [gcode_macro SHAPER_CALIBRATE]
+#     rename_existing: SHAPER_CALIBRATE_BASE
+#     gcode:
+#         SHAPER_CALIBRATE_BASE {rawparams}
+#         SAVE_CONFIG RESTART=0
+# Dessen SAVE_CONFIG laeuft ins Leere - save_params ist ja auskommentiert, es
+# liegt nie etwas im Pending-Puffer. Jeder Aufrufweg (Touchscreen, Mainsail,
+# Konsole) landet aber in genau diesem Makro. Also haengen wir das Speichern
+# hier an, dann wirkt es ueberall.
+#
+# Gleiches Muster benutzt die Firmware selbst in bed_leveling_adaptive_force.cfg
+# fuer BED_MESH_CALIBRATE. Die Kette lautet danach:
+#     SHAPER_CALIBRATE (hier) -> SHAPER_CALIBRATE_FIRMWARE (fluidd.cfg)
+#                             -> SHAPER_CALIBRATE_BASE (Python)
+# ⚠️ Setzt voraus, dass diese Datei NACH fluidd.cfg geladen wird. Meckert
+# Klipper beim Start ueber ein doppelt definiertes Makro, ist die
+# Include-Reihenfolge schuld - dann diesen Block wieder entfernen.
+# ---------------------------------------------------------------------------
+
+[gcode_macro SHAPER_CALIBRATE]
+rename_existing: SHAPER_CALIBRATE_FIRMWARE
+description: Vibrationsmessung - im Druck kurz, sonst volles Band; speichert selbst
+gcode:
+    # Drei Faelle, siehe Block "KURZ IM DRUCK, VOLL BEI SERVICE" weiter unten.
+    {% set im_druck = printer.print_stats.state in ['printing', 'paused'] %}
+    {% set intern = params.FREQ_START is defined or params.FREQ_END is defined %}
+
+    {% if intern %}
+        # Interner Aufruf aus SM_FAST_SHAPER_CALIBRATE_FIRMWARE (je einmal X und
+        # Y, mit fertig gerechnetem Fenster). Unveraendert durchreichen - hier zu
+        # filtern wuerde die Schnellmessung kaputtmachen.
+        SHAPER_CALIBRATE_FIRMWARE {rawparams}
+    {% elif im_druck %}
+        # Vor/waehrend eines Drucks zaehlt Zeit: nur das Band um den laufenden
+        # Wert nachziehen, wie es Snapmaker fuer diesen Fall gebaut hat.
+        RESPOND TYPE=echo MSG="Druck laeuft - kurze Messung (Band um den laufenden Wert)."
+        SM_FAST_SHAPER_CALIBRATE_FIRMWARE
+    {% else %}
+        RESPOND TYPE=echo MSG="Volle Messung ueber das ganze Frequenzband."
+        SHAPER_CALIBRATE_FIRMWARE {rawparams}
+    {% endif %}
+
+    SET_INPUT_SHAPER SAVE=1
+
+# ---------------------------------------------------------------------------
+# KURZ IM DRUCK, VOLL BEI SERVICE (Christophers Ansage, 18.08.)
+#
+# Die Firmware bringt ein zweites Kalibrierkommando mit, SM_FAST_SHAPER_CALIBRATE
+# (resonance_tester.py:544). Es misst NICHT das volle Spektrum, sondern nur ein
+# schmales Band um den aktuell laufenden Wert herum:
+#     freq_start = shaper_freq - delta_freq   (delta_freq = 10 Hz, printer.cfg)
+#     freq_end   = shaper_freq + delta_freq   (geklemmt auf min/max_freq 5..100)
+#     "SHAPER_CALIBRATE AXIS=x SHAPER_TYPES=%s FREQ_START=%d FREQ_END=%d"
+# je einmal fuer X und Y. Das ist schnell, findet aber eine Resonanz nicht mehr,
+# die weiter als delta_freq gewandert ist - also genau den Fall, wegen dem man
+# nach einem mechanischen Eingriff ueberhaupt misst.
+#
+# Deshalb entscheidet der Wrapper nach Kontext:
+#   Service (kein Druck)  -> volles Band, damit auch eine gewanderte Resonanz
+#                            gefunden wird. Das ist der Fall nach Umbauten.
+#   Druck laeuft          -> SM_FAST_SHAPER_CALIBRATE_FIRMWARE, kurz.
+#   Aufruf mit FREQ_*     -> unveraendert durchreichen; das ist der interne
+#                            Aufruf der Schnellmessung. Wuerde man ihn
+#                            umbiegen, entstuende eine Endlosschleife
+#                            (SM_FAST -> SHAPER_CALIBRATE -> SM_FAST -> ...).
+# WOFUER DIE SCHNELLMESSUNG GEDACHT WAR (18.08. am Geraet belegt):
+# als Kalibrierung VOR JEDEM DRUCK, wie beim Bambu. print_task_config.py kennt
+# neben BED_LEVEL und FLOW_CALIBRATE eine dritte Druckvoreinstellung:
+#     SET_PRINT_PREFERENCES ... SHAPER_CALIBRATE=0|1   (:727 und :1109)
+#     Default in der Vorlage: 'shaper_calibrate': False  (:48)
+# In diesem Zusammenhang ergibt das schmale Band Sinn - vor jedem Druck waeren
+# vier laute Minuten volles Spektrum unzumutbar.
+# Bei Christopher ist die Voreinstellung AUS:
+#     snapmaker/print_task.json -> "shaper_calibrate": false
+# Die Touchscreen-GUI liest sie (gui.log: parse_common_print_task_config
+# shaper_calibrate:0), und in keinem gui.log steht je SM_FAST_SHAPER_CALIBRATE.
+# ⚠️ NICHT BELEGT ist damit, welches Kommando ein Druckstart MIT eingeschalteter
+# Option absetzen wuerde - die Option war hier nie an.
+#
+# ★ DESHALB ruft dieses Makro SHAPER_CALIBRATE und NICHT SHAPER_SERVICE:
+# SHAPER_SERVICE bricht per action_raise_error ab, wenn ein Druck laeuft. Wuerde
+# die Voreinstellung je eingeschaltet und der Druckstart riefe hier herein,
+# haette dieser Guard den Druck abgebrochen. Ueber SHAPER_CALIBRATE laeuft
+# stattdessen die volle Messung durch - langsamer, aber kein Abbruch. Gespeichert
+# wird trotzdem, das erledigt der SHAPER_CALIBRATE-Wrapper oben.
+#
+# Rueckweg, falls die schnelle Variante doch einmal gebraucht wird:
+#     SM_FAST_SHAPER_CALIBRATE_FIRMWARE
+# ---------------------------------------------------------------------------
+
+[gcode_macro SM_FAST_SHAPER_CALIBRATE]
+rename_existing: SM_FAST_SHAPER_CALIBRATE_FIRMWARE
+description: Schnellmessung - entscheidet nach Kontext (im Druck kurz, sonst voll)
+gcode:
+    SHAPER_CALIBRATE

@@ -4,7 +4,7 @@
         true
     ],
     "load_finish": [
-        false,
-        false
+        true,
+        true
     ]
 }
